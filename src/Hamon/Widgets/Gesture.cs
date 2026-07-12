@@ -3,8 +3,8 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Animated elements that move forward every frame (such as inertial flings).<see cref="HamonRoot.Update(Size, float)"/>but
-/// dt in seconds<see cref="Tick"/>call.
+/// Animated elements that advance every frame (such as inertial flings). <see cref="HamonRoot.Update(Size, float)"/>
+/// calls <see cref="Tick"/> with dt in seconds.
 /// </summary>
 public interface ITicker
 {
@@ -12,8 +12,9 @@ public interface ITicker
 }
 
 /// <summary>
-/// Estimate the speed (px/sec) from the time series of the pointer main axis position.
-/// Calculate the average speed from the oldest to latest differences (allocation only at constructor = zero allocation per frame).
+/// Estimates speed (px/sec) from the time series of the pointer's main-axis position.
+/// Computes the average speed from the difference between the oldest and latest samples (allocation only in
+/// the constructor = zero allocation per frame).
 /// </summary>
 internal sealed class VelocityTracker
 {
@@ -61,10 +62,11 @@ internal sealed class VelocityTracker
 }
 
 /// <summary>
-/// Drag = scroll + common logic to perform inertia fling at the speed at the moment of release (<see cref="ScrollView"/>/
-/// <see cref="ListView"/>/<see cref="GridView"/>(retained). <see cref="VelocityTracker"/>in
-/// Estimate and Up<see cref="ITicker"/>Register as owner, advance offset with exponential decay.
-/// It ends when the speed falls below the threshold.<see cref="Owner"/>is set when mounting the element.
+/// Common drag-to-scroll logic plus inertial fling at the release speed, held by <see cref="ScrollView"/>/
+/// <see cref="ListView"/>/<see cref="GridView"/>. Speed is estimated via <see cref="VelocityTracker"/>; on
+/// pointer Up, this registers with the owner as an <see cref="ITicker"/> and advances the offset with
+/// exponential decay, ending once the speed falls below the threshold. <see cref="Owner"/> is set when the
+/// element is mounted.
 /// </summary>
 internal sealed class DragScroller : ITicker
 {
@@ -96,7 +98,7 @@ internal sealed class DragScroller : ITicker
 
     public DragScroller(IScrollable target) => _target = target;
 
-    /// <summary>ticker registration destination (when element is mounted)<c>Context.Owner</c>).</summary>
+    /// <summary>Ticker registration destination, set to <c>Context.Owner</c> when the element is mounted.</summary>
     public IHamonHost? Owner { get; set; }
 
     /// <summary>Current inertial velocity (offset px/sec. for inspection/testing).</summary>
@@ -154,14 +156,16 @@ internal sealed class DragScroller : ITicker
     }
 
     /// <summary>
-    /// Wheel/trackpad two fingers =<b>continuous scroll</b>(no inertia).
-    /// Bring it together smoothly.
+    /// Wheel/trackpad two-finger scrolling = <b>continuous scroll</b> (no inertia), smoothly converging to the
+    /// target.
     /// <para>
-    /// Input beyond the edge<see cref="BounceEnabled"/>At times, pull with a rubber band (with resistance),<b>As long as you keep inputting while pulling
-    /// Hold still</b>(equivalent to pull-and-hold = pull-to-refresh type UI), when you stop inputting, it returns to the boundary with a spring.<see cref="BounceEnabled"/>
-    /// If is false, it will stop at the edge without overscrolling (opt-out).
+    /// When input goes past the edge and <see cref="BounceEnabled"/> is set, it pulls with a rubber band (with
+    /// resistance); <b>as long as you keep inputting while pulling, it holds in place</b> (equivalent to
+    /// pull-and-hold, as in pull-to-refresh UIs). Once input stops, it springs back to the boundary. If
+    /// <see cref="BounceEnabled"/> is false, it stops at the edge without overscrolling (opt-out).
     /// </para>
-    /// Arrow/up/down = focus movement<c>scroll-to-focus</c>（<see cref="GlideTo"/>) remains in grid units.
+    /// Arrow keys / D-pad up-down for focus movement use <c>scroll-to-focus</c> (see <see cref="GlideTo"/>)
+    /// instead, which operates in grid units.
     /// </summary>
     public void ScrollBy(float offsetDelta)
     {
@@ -188,7 +192,7 @@ internal sealed class DragScroller : ITicker
         StartTicker();
     }
 
-    /// <summary>Gamepad/scroll-to-focus = Glide smoothly to the specified offset (move the target amount).</summary>
+    /// <summary>Gamepad / scroll-to-focus: glides smoothly to the specified offset (moves by the target amount).</summary>
     public void GlideTo(float targetOffset)
     {
         if (Owner is null || _dragging)

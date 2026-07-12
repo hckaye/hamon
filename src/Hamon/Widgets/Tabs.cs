@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>1 tab (label and body builder).</summary>
+/// <summary>A single tab (label and body builder).</summary>
 public sealed class TabItem
 {
     public TabItem(Widget label, Func<Widget> content)
@@ -17,9 +17,10 @@ public sealed class TabItem
 }
 
 /// <summary>
-/// Keep tab selection status and animate switching (Flutter<c>TabController</c>equivalent).
-/// <see cref="Tabs"/>(do not recreate it by rebuilding).<see cref="Fraction"/>is for the underline indicator.
-/// Continuous position (interpolated from old to new during switching),<see cref="BodyFade"/>is the main body fade.
+/// Holds tab selection state and animates switching (equivalent to Flutter's <c>TabController</c>). Pass the same
+/// instance to <see cref="Tabs"/> (do not let a rebuild recreate it). <see cref="Fraction"/> is the underline
+/// indicator's continuous position (interpolated from the old index to the new one while switching), and
+/// <see cref="BodyFade"/> is the fade progress of the main body.
 /// </summary>
 public sealed class TabController
 {
@@ -38,7 +39,7 @@ public sealed class TabController
         _curve = curve;
     }
 
-    /// <summary>Connect to the host and prepare the switching animation (<see cref="Tabs"/>is called at build time (idempotent). </summary>
+    /// <summary>Connects to the host and prepares the switching animation. Called by <see cref="Tabs"/> at build time (idempotent).</summary>
     internal void Attach(IHamonHost host)
     {
         if (_host is not null)
@@ -55,10 +56,10 @@ public sealed class TabController
 
     public int Index { get; private set; }
 
-    /// <summary>Tab on mouse hover (-1=none). </summary>
+    /// <summary>Index of the tab currently under mouse hover (-1 = none).</summary>
     public int HoveredIndex { get; private set; } = -1;
 
-    /// <summary>Set tabs on hover (tab<see cref="MouseRegion"/>).</summary>
+    /// <summary>Sets the hovered tab index (called from each tab's <see cref="MouseRegion"/>).</summary>
     public void SetHovered(int index)
     {
         if (index != HoveredIndex)
@@ -68,10 +69,10 @@ public sealed class TabController
         }
     }
 
-    /// <summary>Continuous position of the underline indicator (while switching, interpolate from old index to new index). </summary>
+    /// <summary>Continuous position of the underline indicator (interpolates from the old index to the new one while switching).</summary>
     public float Fraction => _anim is null ? Index : _fromFraction + ((Index - _fromFraction) * _anim.Curved);
 
-    /// <summary>Fade progress of the main unit (switching from 0 to 1). </summary>
+    /// <summary>Fade progress of the main body content (0 to 1 while switching).</summary>
     public float BodyFade => _anim?.Curved ?? 1f;
 
     public void Select(int index)
@@ -91,9 +92,11 @@ public sealed class TabController
 }
 
 /// <summary>
-/// Tab UI (Flutter<c>TabBar</c>＋<c>TabBarView</c>equivalent).
-/// Crossfade according to continuous position), main body below (fade in by switching). <see cref="Transform"/>of
-/// No feedback is required after layout because it is expressed by the opacity of each tab underline instead of pixel movement.
+/// Tab UI (equivalent to Flutter's <c>TabBar</c> + <c>TabBarView</c>). Renders a row of tab buttons above the main
+/// body; each tab's underline crossfades according to the controller's continuous <see cref="TabController.Fraction"/>,
+/// and the body fades in when switching. Because the indicator's position is expressed via each tab underline's
+/// opacity rather than by moving a single indicator with <see cref="Transform"/>, no layout feedback pass is
+/// needed after measurement.
 /// </summary>
 public sealed class Tabs : StatelessWidget
 {
@@ -108,7 +111,7 @@ public sealed class Tabs : StatelessWidget
     public override Widget Build(BuildContext context)
     {
         TabController controller = Controller
-            ?? throw new InvalidOperationException("Tabs には Controller が必要。");
+            ?? throw new InvalidOperationException("Tabs requires a Controller.");
 
         if (context.Owner is { } owner)
         {

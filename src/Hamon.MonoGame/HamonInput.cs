@@ -7,8 +7,9 @@ using Microsoft.Xna.Framework.Input.Touch;
 namespace Hamon.MonoGame;
 
 /// <summary>
-/// Reads MonoGame's Mouse/Keyboard/GamePad every frame,<see cref="HamonRoot"/>Input pump for delivery to.
-/// PollMouse/PollKeys/PollPad, which were duplicated in each sample, were unified into one.<see cref="HamonApp"/>is driven internally.
+/// Input pump that reads MonoGame's Mouse/Keyboard/GamePad state every frame and delivers it to
+/// <see cref="HamonRoot"/>. Unifies the PollMouse/PollKeys/PollPad logic that used to be duplicated in
+/// every sample; driven internally by <see cref="HamonApp"/>.
 /// </summary>
 public sealed class HamonInput
 {
@@ -22,19 +23,16 @@ public sealed class HamonInput
 
     public HamonInput(HamonRoot ui) => _ui = ui;
 
-    /// <summary>
-    /// Handler called by "Back" operation (Esc / Gamepad B).
-    /// default policy).
-    /// </summary>
+    /// <summary>Handler invoked for the "Back" action (Esc / Gamepad B). There is no default behavior; assign this to handle it.</summary>
     public Action? OnBack { get; set; }
 
-    /// <summary>Wheel 1 notch (OS 120 units) → px magnification (default 0.22 = conservative).</summary>
+    /// <summary>Multiplier converting one wheel notch (OS units of 120) to pixels (default 0.22, a conservative value).</summary>
     public float WheelScale { get; set; } = 0.22f;
 
     // タッチ ID をマウス（ID 0）と衝突させないためのオフセット。各指は location.Id + この値で配送される。
     private const int TouchIdOffset = 1;
 
-    /// <summary>Read mouse/touch/wheel/keyboard/gamepad,<see cref="HamonRoot"/>(once per frame).</summary>
+    /// <summary>Reads mouse, touch, wheel, keyboard, and gamepad input and dispatches it to <see cref="HamonRoot"/> (call once per frame).</summary>
     public void Update()
     {
         PollMouse();
@@ -88,10 +86,12 @@ public sealed class HamonInput
     }
 
     /// <summary>
-    /// Deliver each finger on the touch panel with an ID (multi-touch = pressing VPad and skill button at the same time, etc.).<see cref="TouchLocation"/>of
-    /// Since State has a phase, there is no need to compare the previous frame. <see cref="TouchIdOffset"/>shift.
-    /// Note:<c>TouchPanel.EnableMouseTouchEmulation</c>If you enable it, mouse operations will also come as synthetic touches, resulting in double delivery.
-    /// (The mouse is<see cref="PollMouse"/>(read separately), so do not enable it on the desktop.
+    /// Delivers each finger on the touch panel with its own ID, to support multi-touch (e.g. pressing a
+    /// virtual pad and a skill button at the same time). Because <see cref="TouchLocation"/>'s State already
+    /// carries a phase, there's no need to compare against the previous frame; IDs are shifted by
+    /// <see cref="TouchIdOffset"/>. Note: enabling <c>TouchPanel.EnableMouseTouchEmulation</c> makes mouse
+    /// operations also arrive as synthetic touches, causing double delivery (the mouse is already read
+    /// separately by <see cref="PollMouse"/>), so do not enable it on desktop.
     /// </summary>
     private void PollTouch()
     {

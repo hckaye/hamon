@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>A shared element that can be the target of a flight (registered by tag and provides a drawing of the current rectangle and contents).</summary>
+/// <summary>A shared element that can be the target of a flight. Registered by tag, and provides a drawing of its current rectangle and contents.</summary>
 internal interface IHeroSource
 {
     Rect Bounds { get; }
@@ -11,14 +11,15 @@ internal interface IHeroSource
 }
 
 /// <summary>
-/// <see cref="Hero"/>Registry by tag (<see cref="HamonRoot"/>has one).
-/// In transition (<see cref="TransitionActive"/>), interpolate flight from "Hero of the lower route (starting point) → Hero of the upper route (end point)".
+/// A registry of <see cref="Hero"/> instances by tag (one is held by <see cref="HamonRoot"/>).
+/// During a transition (<see cref="TransitionActive"/>), interpolates the flight from the Hero on the lower route
+/// (starting point) to the Hero on the upper route (end point).
 /// </summary>
 internal sealed class HeroRegistry
 {
     private readonly Dictionary<object, List<IHeroSource>> _byTag = new();
 
-    /// <summary>Is it during the transition animation? (<see cref="Navigator"/>(set by push/pop progress status).</summary>
+    /// <summary>Is a transition animation in progress? Set according to <see cref="Navigator"/> push/pop progress.</summary>
     public bool TransitionActive { get; set; }
 
     public IReadOnlyDictionary<object, List<IHeroSource>> ByTag => _byTag;
@@ -46,14 +47,15 @@ internal sealed class HeroRegistry
         }
     }
 
-    /// <summary>Is this tag in flight (in transition and there are two or more of the same tags)? </summary>
+    /// <summary>Is this tag currently in flight (a transition is active and there are two or more Heroes with the same tag)?</summary>
     public bool IsFlying(object tag) => TransitionActive && _byTag.TryGetValue(tag, out List<IHeroSource>? list) && list.Count >= 2;
 }
 
 /// <summary>
-/// Shared element transition (Flutter<c>Hero</c>equivalent minimum practical version). <see cref="Tag"/>If a Hero with is in the route before and after the transition,
-/// The contents jump from the starting point rectangle to the ending rectangle according to the progress of push/pop (position and size are interpolated).
-/// The drawing of the normal position is omitted, and only the foreground flight is visible.
+/// A shared-element transition (a minimal, practical equivalent of Flutter's <c>Hero</c>). If a Hero with a matching
+/// <see cref="Tag"/> exists in both the route before and after the transition, its contents fly from the starting
+/// rectangle to the ending rectangle as the push/pop progresses (position and size are interpolated).
+/// Normal-position drawing is suppressed, and only the flying foreground copy is visible.
 /// </summary>
 public sealed class Hero : Widget, IRenderConfig
 {
@@ -72,7 +74,7 @@ public sealed class Hero : Widget, IRenderConfig
     public override Element CreateElement() => new HeroElement(this);
 }
 
-/// <summary><see cref="Hero"/>holding entity. </summary>
+/// <summary>The holding entity for <see cref="Hero"/>.</summary>
 internal sealed class HeroElement : RenderElement, IHeroSource
 {
     private object? _registeredTag;
@@ -116,7 +118,7 @@ internal sealed class HeroElement : RenderElement, IHeroSource
         base.Paint(context);
     }
 
-    /// <summary>Proxy drawing from flight (contents only = Background is null).</summary>
+    /// <summary>Proxy drawing invoked by the flight (contents only, since Background is null).</summary>
     public void PaintFlight(in PaintContext context) => base.Paint(context);
 
     private void Register()
@@ -140,8 +142,8 @@ internal sealed class HeroElement : RenderElement, IHeroSource
 }
 
 /// <summary>
-/// <see cref="Navigator"/>The flight drawing layer that is stacked on top.
-/// Convert and draw the contents of the end point Hero.
+/// The flight-drawing layer stacked on top of the <see cref="Navigator"/>.
+/// Transforms and draws the contents of the end-point Hero.
 /// </summary>
 internal sealed class HeroLayer : Widget
 {

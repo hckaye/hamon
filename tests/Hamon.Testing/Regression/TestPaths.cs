@@ -23,6 +23,6 @@ public static class TestPaths
             dir = Path.GetDirectoryName(dir);
         }
 
-        throw new InvalidOperationException($"プロジェクトルート（*.csproj）が見つからない: {callerFile}");
+        throw new InvalidOperationException($"Could not find the project root (*.csproj) starting from: {callerFile}");
     }
 }

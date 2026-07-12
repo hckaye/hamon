@@ -3,13 +3,16 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// for games<b>image skin</b>(declarative data that draws a sprite/9-slice into a rectangle).
-/// to parts<c>*Skin</c>If passed as a property, draw with this image instead of the built-in color drawing (unset =<see cref="HasValue"/>If false
-/// Conventional color drawing = backward compatible).<see cref="Border"/>If is non-zero, 9-slice (scale without distorting the frame); if zero, simply stretch.
-/// <see cref="Source"/>You can use partial areas of sprite sheets with .
+/// An <b>image skin</b> for games — declarative data describing how to draw a sprite or 9-slice into a rectangle.
+/// When passed as a widget's <c>*Skin</c> property, it is drawn instead of the built-in color rendering (when unset,
+/// i.e. <see cref="HasValue"/> is false, the widget falls back to its conventional color rendering, preserving
+/// backward compatibility). If <see cref="Border"/> is non-zero, the image is drawn as a 9-slice (scaling without
+/// distorting the frame); if zero, it is simply stretched. <see cref="Source"/> lets you use a partial region of a
+/// sprite sheet.
 ///
-/// <para>Just pass data declaratively such as "This part is this image" and do not write imperative drawing code (maintaining the idea of ​​declarative UI).
-/// If you want to change the sprite depending on the state (pressed/selected, etc.), the widget should change the sprite according to the state.<see cref="ImageSkin"/>Select and hand it over.</para>
+/// <para>Only declarative data such as "this part uses this image" is passed here — no imperative drawing code is
+/// written, preserving the declarative-UI approach. If the sprite needs to change with state (pressed/selected,
+/// etc.), the widget itself should select the appropriate <see cref="ImageSkin"/> for that state and hand it over.</para>
 /// </summary>
 public readonly struct ImageSkin
 {
@@ -21,13 +24,13 @@ public readonly struct ImageSkin
         Tint = tint ?? Color.White;
     }
 
-    /// <summary>Texture to draw (null = no skin = fallback to traditional color drawing).</summary>
+    /// <summary>The texture to draw (null means no skin, so the widget falls back to its traditional color drawing).</summary>
     public ITexture? Texture { get; init; }
 
-    /// <summary>9-slice frame width (px, if all zeros, simply stretch).</summary>
+    /// <summary>The 9-slice frame width (px); if all sides are zero, the texture is simply stretched.</summary>
     public EdgeInsets Border { get; init; }
 
-    /// <summary>Partial area of ​​sprite sheet (unspecified, entire texture).</summary>
+    /// <summary>A partial region of the sprite sheet (if unspecified, the entire texture is used).</summary>
     public RectInt? Source { get; init; }
 
     /// <summary>Multiply color (default white = leave as is).</summary>
@@ -39,10 +42,10 @@ public readonly struct ImageSkin
     // init 構文（コンストラクタ未使用）で Tint 未指定だと default(Color)=透明になるため、その場合は白として描く。
     private Color EffectiveTint => Tint is { R: 0, G: 0, B: 0, A: 0 } ? Color.White : Tint;
 
-    /// <summary><paramref name="rect"/>Draw a heskin (9-slice/sprite/enlarge automatically selected).</summary>
+    /// <summary>Draws the skin into <paramref name="rect"/> (9-slice/sprite/stretch is chosen automatically).</summary>
     public void Paint(in PaintContext context, Rect rect) => Paint(context, rect, EffectiveTint);
 
-    /// <summary>Draw by overwriting the color (tone change/fade, etc. depending on the state).</summary>
+    /// <summary>Draws with an overridden tint color (e.g. for tone changes/fades depending on state).</summary>
     public void Paint(in PaintContext context, Rect rect, Color tint)
     {
         if (Texture is not ITexture tex)

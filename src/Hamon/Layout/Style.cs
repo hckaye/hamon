@@ -1,13 +1,13 @@
 namespace Hamon.Layout;
 
-/// <summary>Flex principal axis direction (Flutter<c>Axis</c>equivalent).</summary>
+/// <summary>The main axis direction for flex layout (equivalent to Flutter's <c>Axis</c>).</summary>
 public enum Axis : byte
 {
     Horizontal,
     Vertical,
 }
 
-/// <summary>Placement of children along the main axis (Flutter<c>MainAxisAlignment</c>）。</summary>
+/// <summary>Placement of children along the main axis (equivalent to Flutter's <c>MainAxisAlignment</c>).</summary>
 public enum MainAxisAlignment : byte
 {
     Start,
@@ -18,7 +18,7 @@ public enum MainAxisAlignment : byte
     SpaceEvenly,
 }
 
-/// <summary>Placement of children along the cross axis (Flutter<c>CrossAxisAlignment</c>). <see cref="Center"/>(Same as Flutter).</summary>
+/// <summary>Placement of children along the cross axis (equivalent to Flutter's <c>CrossAxisAlignment</c>). The default is <see cref="Center"/> (same as Flutter).</summary>
 public enum CrossAxisAlignment : byte
 {
     /// <summary>Center of cross axis (default = same as Flutter).</summary>
@@ -32,43 +32,44 @@ public enum CrossAxisAlignment : byte
     Stretch,
 }
 
-/// <summary>Size in the main axis direction (Flutter<c>MainAxisSize</c>). <see cref="Max"/>。</summary>
+/// <summary>Size along the main axis (equivalent to Flutter's <c>MainAxisSize</c>). The default is <see cref="Max"/>.</summary>
 public enum MainAxisSize : byte
 {
-    /// <summary>Full available spindles (default).</summary>
+    /// <summary>Fill the available main-axis space (default).</summary>
     Max,
 
     /// <summary>Shrinks to fit the content.</summary>
     Min,
 }
 
-/// <summary>Node layout method. <see cref="Flex"/>(Row/Column type).</summary>
+/// <summary>The node's layout method. The default is <see cref="Flex"/> (Row/Column style).</summary>
 public enum LayoutKind : byte
 {
     /// <summary>Flexbox subset (main axis/cross axis flow).</summary>
     Flex,
 
-    /// <summary>Overlapping children (Flutter<c>Stack</c>). <c>Positioned</c>Absolute placement.</summary>
+    /// <summary>Overlapping children (equivalent to Flutter's <c>Stack</c>). Children marked <c>Positioned</c> are placed absolutely.</summary>
     Stack,
 
-    /// <summary>A viewport that scrolls along the main axis (<c>ScrollView</c>). </summary>
+    /// <summary>A viewport that scrolls along the main axis (<c>ScrollView</c>).</summary>
     Scroll,
 
     /// <summary>
-    /// Single Child Box (Flutter<c>Container</c>/<c>Padding</c>/proxy equivalent).<b>Deflate the incoming constraints by padding
-    /// pass it on to the child</b>(If it is tight, it will remain tight = the child will spread out).
-    /// Clamp child + padding with constraints.
+    /// A single-child box (equivalent to Flutter's <c>Container</c>/<c>Padding</c>/a proxy widget). <b>Deflates the incoming
+    /// constraints by the padding before passing them to the child</b> (if the constraints are tight, they remain
+    /// tight, so the child fills the available space). The final size clamps child size + padding to the constraints.
     /// </summary>
     Box,
 
     /// <summary>
-    /// Folded flow (Flutter<c>Wrap</c>).
-    /// Children are measured loosely (natural size).<see cref="Style.Spacing"/>= spindle spacing,<see cref="Style.RunSpacing"/>= between lines.
+    /// A wrapping flow layout (equivalent to Flutter's <c>Wrap</c>).
+    /// Children are measured loosely (their natural size). <see cref="Style.Spacing"/> is the spacing along the main
+    /// axis, and <see cref="Style.RunSpacing"/> is the spacing between lines (runs).
     /// </summary>
     Wrap,
 }
 
-/// <summary>2D Anchor (Flutter<c>Alignment</c>9 points).<see cref="LayoutKind.Stack"/>Used for non-locators.</summary>
+/// <summary>A 2D anchor point (equivalent to Flutter's 9-point <c>Alignment</c>). Used for non-positioned children of <see cref="LayoutKind.Stack"/>.</summary>
 public enum Alignment : byte
 {
     TopLeft,
@@ -83,8 +84,9 @@ public enum Alignment : byte
 }
 
 /// <summary>
-/// Widget layout style (Flexbox subset/Flutter compliant vocabulary).
-/// Value types only (no allocations).<c>default</c>is the straightforward default for Horizontal/Start/non-flex/Auto dimensions and MainAxisSize.Max.
+/// The layout style for a widget (a Flexbox subset using Flutter-compatible terminology).
+/// A value type only (no allocations); <c>default</c> gives sensible defaults: Horizontal direction, Start
+/// alignment, non-flex, Auto dimensions, and <see cref="MainAxisSize.Max"/>.
 /// </summary>
 public readonly struct Style
 {
@@ -93,26 +95,27 @@ public readonly struct Style
     public CrossAxisAlignment CrossAxisAlignment { get; init; }
     public MainAxisSize MainAxisSize { get; init; }
 
-    /// <summary>Layout method (default<see cref="LayoutKind.Flex"/>）。<see cref="LayoutKind.Stack"/>Layered arrangement.</summary>
+    /// <summary>The layout method (default is <see cref="LayoutKind.Flex"/>). Use <see cref="LayoutKind.Stack"/> for layered/overlapping arrangement.</summary>
     public LayoutKind Kind { get; init; }
 
-    /// <summary><see cref="LayoutKind.Stack"/>(default<see cref="Alignment.TopLeft"/>）。</summary>
+    /// <summary>Alignment for non-positioned children within a <see cref="LayoutKind.Stack"/> (default <see cref="Alignment.TopLeft"/>).</summary>
     public Alignment StackAlignment { get; init; }
 
-    /// <summary><see cref="LayoutKind.Stack"/>Expand the non-placer to fill the parent (Flutter<c>StackFit.expand</c>equivalent).</summary>
+    /// <summary>For a <see cref="LayoutKind.Stack"/>, expands non-positioned children to fill the parent (equivalent to Flutter's <c>StackFit.expand</c>).</summary>
     public bool StackExpandChildren { get; init; }
 
     /// <summary>
-    /// <see cref="LayoutKind.Box"/>Align children with (Flutter<c>Align</c>/<c>Center</c>/<c>Container.alignment</c>equivalent).
-    /// When specified: The box will expand to fill the available size if possible, and the children will be loosely measured and placed at this anchor.
-    /// Unspecified (null): Measures the child tight (filling), and the box shrinks to the child + padding (equivalent to proxy/padding).
+    /// For a <see cref="LayoutKind.Box"/>, aligns the child within it (equivalent to Flutter's <c>Align</c>/<c>Center</c>/<c>Container.alignment</c>).
+    /// When specified: the box expands to fill the available size where possible, and the child is measured loosely
+    /// and placed at this anchor. When unspecified (null): the child is measured tight (filling), and the box
+    /// shrinks to the child's size plus padding (equivalent to a proxy/padding widget).
     /// </summary>
     public Alignment? ChildAlign { get; init; }
 
-    /// <summary>parent<see cref="LayoutKind.Stack"/>Is it an absolutely positioned child within (<c>Positioned</c>）。</summary>
+    /// <summary>Whether this is an absolutely positioned child within a parent <see cref="LayoutKind.Stack"/> (equivalent to <c>Positioned</c>).</summary>
     public bool Positioned { get; init; }
 
-    /// <summary>Absolutely positioned left/top/right/bottom inset (Auto=unspecified).<see cref="Positioned"/>sometimes used</summary>
+    /// <summary>Absolutely positioned left/top/right/bottom inset (Auto = unspecified). Used when <see cref="Positioned"/> is true.</summary>
     public Dimension Left { get; init; }
 
     public Dimension Top { get; init; }
@@ -121,27 +124,28 @@ public readonly struct Style
 
     public Dimension Bottom { get; init; }
 
-    /// <summary>Fixed spacing between children (equivalent to Flex.spacing in Flutter 3.27).<see cref="LayoutKind.Wrap"/>Then, the spacing in the main axis direction.</summary>
+    /// <summary>Fixed spacing between children (equivalent to Flutter 3.27's <c>Flex.spacing</c>). For <see cref="LayoutKind.Wrap"/>, this is the spacing along the main axis.</summary>
     public float Spacing { get; init; }
 
-    /// <summary><see cref="LayoutKind.Wrap"/>The row spacing (the spacing in the cross-axis direction. Flutter<c>Wrap.runSpacing</c>）。</summary>
+    /// <summary>For <see cref="LayoutKind.Wrap"/>, the spacing between rows (cross-axis spacing; equivalent to Flutter's <c>Wrap.runSpacing</c>).</summary>
     public float RunSpacing { get; init; }
 
-    /// <summary>Extra spindle share (0 = no stretch). <c>Expanded</c>/<c>Flexible</c>Set with .</summary>
+    /// <summary>Share of extra main-axis space to occupy (0 = no stretch). Set via <c>Expanded</c>/<c>Flexible</c>.</summary>
     public float FlexGrow { get; init; }
 
-    /// <summary>Shrinkage factor for the missing principal axis (0 = no shrinkage).</summary>
+    /// <summary>Shrink factor applied when there isn't enough main-axis space (0 = no shrinking).</summary>
     public float FlexShrink { get; init; }
 
-    /// <summary>Reference size of spindle (Auto = from content or spindle dimensions).</summary>
+    /// <summary>Reference main-axis size before growing/shrinking (Auto = derived from content or the main-axis dimension).</summary>
     public Dimension FlexBasis { get; init; }
 
     public EdgeInsets Margin { get; init; }
     public EdgeInsets Padding { get; init; }
 
     /// <summary>
-    /// <see cref="LayoutKind.Box"/>Aspect ratio (width/height, 0=disabled).
-    /// Decide on yourself and measure your child using that size (tight with padding deflated) (Flutter<c>AspectRatio</c>equivalent).
+    /// For a <see cref="LayoutKind.Box"/>, the aspect ratio (width/height, 0 = disabled).
+    /// The box determines its own size from this ratio, then measures its child tight to that size (with padding
+    /// deflated) — equivalent to Flutter's <c>AspectRatio</c>.
     /// </summary>
     public float AspectRatio { get; init; }
 

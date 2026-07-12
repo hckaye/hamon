@@ -3,9 +3,11 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Management of lightweight FX (floating text = damage numbers/simple burst of particles).<b>outside the declaration tree</b>handle with
-/// Ultra-high-frequency, short-lived effects are rotated in a fixed capacity pool (not allocated by spawn), advanced every frame, and erased at the end of their lifespan.
-/// <see cref="ITicker"/>Register with the host as<see cref="FxLayer"/>Draw with it in the forefront. <see cref="FxLayer"/>call from.
+/// Manages lightweight FX (floating text = damage numbers, and simple particle bursts), handled
+/// <b>outside the widget declaration tree</b>. Ultra-high-frequency, short-lived effects rotate through a
+/// fixed-capacity pool (no allocation on spawn), advance every frame, and are erased at the end of their
+/// lifespan. Register this with the host as an <see cref="ITicker"/>, and draw it in the foreground via
+/// <see cref="FxLayer"/>. Call <see cref="SpawnText"/>/<see cref="SpawnBurst"/> from gameplay code.
 /// </summary>
 public sealed class FxController : ITicker
 {
@@ -52,14 +54,14 @@ public sealed class FxController : ITicker
     /// <summary>Valid particle count (for inspection/testing).</summary>
     public int ActiveParticleCount => CountActiveP(_particles);
 
-    /// <summary>Displays damage numbers, etc. as a rise + fade.<paramref name="pos"/>are screen coordinates (draw centered).</summary>
+    /// <summary>Displays damage numbers, etc., as a rise-and-fade effect. <paramref name="pos"/> is in screen coordinates (drawn centered).</summary>
     public void SpawnText(Vec2 pos, string text, Color color, float size = 22f, float life = 0.9f, float rise = 60f)
     {
         int i = NextSlot(_floaters, ref _floaterCursor);
         _floaters[i] = new Floater { Pos = pos, Text = text, Color = color, Size = size, Age = 0f, Life = life, Rise = rise, Active = true };
     }
 
-    /// <summary>particles radially<paramref name="count"/>Distribute (hit/acquisition effects, etc.).<paramref name="additive"/>Additive synthesis (glow).</summary>
+    /// <summary>Distributes <paramref name="count"/> particles radially (for hit/pickup effects, etc.). <paramref name="additive"/> enables additive blending (glow).</summary>
     public void SpawnBurst(Vec2 pos, int count, Color color, float speed = 120f, float life = 0.6f, float size = 4f, float gravity = 220f, bool additive = false)
     {
         for (int k = 0; k < count; k++)
@@ -238,8 +240,9 @@ public sealed class FxController : ITicker
 }
 
 /// <summary>
-/// A layer that draws FX on top (<see cref="FxController"/>Read the contents when drawing = no reconstruction/pointer transparency).
-/// (such as the end of a Stack). <see cref="FxController.SpawnText"/>/<see cref="FxController.SpawnBurst"/>Load from
+/// A layer that draws FX on top: reads the contents of <see cref="FxController"/> at paint time (no rebuild
+/// needed, and pointer-transparent). Place it at, e.g., the end of a Stack. Populate it via
+/// <see cref="FxController.SpawnText"/>/<see cref="FxController.SpawnBurst"/>.
 /// </summary>
 public sealed class FxLayer : Widget
 {

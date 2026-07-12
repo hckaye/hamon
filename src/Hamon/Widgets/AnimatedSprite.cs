@@ -3,9 +3,9 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Sprite sheet frame-by-frame animation (flipbook).<see cref="Texture"/>of<see cref="FrameWidth"/>×<see cref="FrameHeight"/>of
-/// Divide into grids,<see cref="Fps"/>in<see cref="FrameCount"/>Display the frames in order (<see cref="Loop"/>(repeat).
-/// Because I read<b>No rebuild</b>.
+/// Frame-by-frame sprite sheet animation (flipbook). Divides <see cref="Texture"/> into a grid of
+/// <see cref="FrameWidth"/> × <see cref="FrameHeight"/> cells and displays <see cref="FrameCount"/> frames in order
+/// at <see cref="Fps"/>, repeating if <see cref="Loop"/> is set. Driven by a ticker each frame, so <b>no rebuild is needed</b>.
 /// </summary>
 public sealed class AnimatedSprite : Widget
 {
@@ -20,7 +20,7 @@ public sealed class AnimatedSprite : Widget
     /// <summary>Total number of frames.</summary>
     public required int FrameCount { get; init; }
 
-    /// <summary>Number of columns in the sheet (0 = texture width ÷<see cref="FrameWidth"/>(calculated from).</summary>
+    /// <summary>Number of columns in the sheet (0 = calculated from texture width ÷ <see cref="FrameWidth"/>).</summary>
     public int Columns { get; init; }
 
     /// <summary>Frames per second (default 12).</summary>
@@ -31,10 +31,10 @@ public sealed class AnimatedSprite : Widget
 
     public Color Tint { get; init; } = Color.White;
 
-    /// <summary>Display width (unspecified<see cref="FrameWidth"/>）。</summary>
+    /// <summary>Display width (defaults to <see cref="FrameWidth"/> if unspecified).</summary>
     public Dimension Width { get; init; }
 
-    /// <summary>Display height (unspecified)<see cref="FrameHeight"/>）。</summary>
+    /// <summary>Display height (defaults to <see cref="FrameHeight"/> if unspecified).</summary>
     public Dimension Height { get; init; }
 
     public override Element CreateElement() => new AnimatedSpriteElement(this);

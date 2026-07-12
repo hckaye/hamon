@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>Arrange children horizontally (Flutter<c>Row</c>）。</summary>
+/// <summary>Arranges children horizontally (equivalent to Flutter's <c>Row</c>).</summary>
 public sealed class Row : Widget, IRenderConfig
 {
     public IReadOnlyList<Widget> Children { get; init; } = Array.Empty<Widget>();
@@ -29,7 +29,7 @@ public sealed class Row : Widget, IRenderConfig
     public override Element CreateElement() => new RenderElement(this);
 }
 
-/// <summary>Arrange children vertically (Flutter<c>Column</c>）。</summary>
+/// <summary>Arranges children vertically (equivalent to Flutter's <c>Column</c>).</summary>
 public sealed class Column : Widget, IRenderConfig
 {
     public IReadOnlyList<Widget> Children { get; init; } = Array.Empty<Widget>();
@@ -54,7 +54,7 @@ public sealed class Column : Widget, IRenderConfig
     public override Element CreateElement() => new RenderElement(this);
 }
 
-/// <summary>Single child container with margins, background color, and size (Flutter<c>Container</c>).</summary>
+/// <summary>A single-child container with margin, padding, background color, and sizing (equivalent to Flutter's <c>Container</c>).</summary>
 public sealed class Container : Widget, IRenderConfig
 {
     public Widget? Child { get; init; }
@@ -67,7 +67,7 @@ public sealed class Container : Widget, IRenderConfig
     /// <summary>Background corner radius (px, default 0 = rectangle).</summary>
     public float Radius { get; init; }
 
-    /// <summary>Child alignment (Flutter<c>Container.alignment</c>). </summary>
+    /// <summary>Child alignment (equivalent to Flutter's <c>Container.alignment</c>).</summary>
     public Alignment? Alignment { get; init; }
 
     Style IRenderConfig.Style => new()
@@ -89,7 +89,7 @@ public sealed class Container : Widget, IRenderConfig
     public override Element CreateElement() => new RenderElement(this);
 }
 
-/// <summary>Add inner margin to child (Flutter<c>Padding</c>）。</summary>
+/// <summary>Adds inner margin around a child (equivalent to Flutter's <c>Padding</c>).</summary>
 public sealed class Padding : Widget, IRenderConfig
 {
     public EdgeInsets Insets { get; init; }
@@ -103,7 +103,7 @@ public sealed class Padding : Widget, IRenderConfig
     public override Element CreateElement() => new RenderElement(this);
 }
 
-/// <summary>Move children to specified anchor (Flutter<c>Align</c>). </summary>
+/// <summary>Moves a child to the specified anchor (equivalent to Flutter's <c>Align</c>).</summary>
 public sealed class Align : Widget, IRenderConfig
 {
     public Widget? Child { get; init; }
@@ -126,7 +126,7 @@ public sealed class Align : Widget, IRenderConfig
     public override Element CreateElement() => new RenderElement(this);
 }
 
-/// <summary>Align children to center (Flutter<c>Center</c> ＝ <see cref="Align"/>center). </summary>
+/// <summary>Aligns a child to the center (equivalent to Flutter's <c>Center</c>, i.e. <see cref="Align"/> with center alignment).</summary>
 public sealed class Center : Widget, IRenderConfig
 {
     public Widget? Child { get; init; }
@@ -146,7 +146,7 @@ public sealed class Center : Widget, IRenderConfig
     public override Element CreateElement() => new RenderElement(this);
 }
 
-/// <summary>Fixed size box (Flutter<c>SizedBox</c>). </summary>
+/// <summary>A box of fixed size (equivalent to Flutter's <c>SizedBox</c>).</summary>
 public sealed class SizedBox : Widget, IRenderConfig
 {
     public Dimension Width { get; init; }

@@ -3,38 +3,43 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Circular progress (Flutter<c>CircularProgressIndicator</c>equivalent).<see cref="Value"/>(0..1)<b>Confirmed</b>
-/// (track circle + progress arc), if unspecified (null)<b>Uncertain</b>(Spinner whose arc keeps spinning) = Same as Flutter Switches depending on the presence or absence of value.
-/// <see cref="ValueGetter"/>Read the progress when drawing with (Bind/anime binding/ZeroAlloc extension = fixed when setting<see cref="Value"/>priority).
-/// Cooldown arc/donut display (<see cref="StartRadians"/>).
+/// A circular progress indicator (the equivalent of Flutter's
+/// <c>CircularProgressIndicator</c>). When <see cref="Value"/> (0..1) is set, it is
+/// <b>determinate</b> (a track circle plus a progress arc); when unspecified (null),
+/// it is <b>indeterminate</b> (a spinner whose arc keeps rotating) — the same
+/// switching behavior as Flutter, based on whether a value is present.
+/// <see cref="ValueGetter"/> reads the progress at paint time (useful for
+/// data-binding or animation without extra allocation); when both are set,
+/// <see cref="Value"/> takes priority. Also useful for cooldown arcs or donut-style
+/// displays via <see cref="StartRadians"/>.
 /// </summary>
 public sealed class CircularProgressIndicator : Widget
 {
-    /// <summary>Progress 0..1. <c>value</c>Same as.</summary>
+    /// <summary>Progress, 0..1. Equivalent to Flutter's <c>value</c>.</summary>
     public float? Value { get; init; }
 
-    /// <summary>Read the progress when drawing (when setting = confirmed/<see cref="Value"/>priority). </summary>
+    /// <summary>Reads the progress at paint time. Setting this makes the indicator determinate; <see cref="Value"/> takes priority if both are set.</summary>
     public Func<float>? ValueGetter { get; init; }
 
-    /// <summary>Progress arc color (Flutter<c>color</c>/<c>valueColor</c>・Unspecified theme<see cref="HamonTheme.Primary"/>）。</summary>
+    /// <summary>Progress arc color (Flutter's <c>color</c>/<c>valueColor</c>; falls back to the theme's <see cref="HamonTheme.Primary"/> if unspecified).</summary>
     public Color? Color { get; init; }
 
-    /// <summary>Track (background circle) color (Flutter<c>backgroundColor</c>・Unspecified theme<see cref="HamonTheme.SurfaceVariant"/>）。</summary>
+    /// <summary>Track (background circle) color (Flutter's <c>backgroundColor</c>; falls back to the theme's <see cref="HamonTheme.SurfaceVariant"/> if unspecified).</summary>
     public Color? BackgroundColor { get; init; }
 
-    /// <summary>Line thickness (Flutter<c>strokeWidth</c>・Default 4).</summary>
+    /// <summary>Line thickness (Flutter's <c>strokeWidth</c>; default 4).</summary>
     public float StrokeWidth { get; init; } = 4f;
 
-    /// <summary>Outer diameter (px). </summary>
+    /// <summary>Outer diameter (px).</summary>
     public float Diameter { get; init; } = 36f;
 
-    /// <summary>The starting angle of the definite arc (in radians, default = directly above -90°). </summary>
+    /// <summary>The starting angle of the determinate arc (in radians, default -90°, i.e. directly above).</summary>
     public float StartRadians { get; init; } = -MathF.PI / 2f;
 
-    /// <summary>Image skin to spin when uncertain (for games = any spinner sprite). </summary>
+    /// <summary>Image skin to spin while indeterminate (for games — any spinner sprite).</summary>
     public ImageSkin Sprite { get; init; }
 
-    /// <summary>Indeterminate Number of seconds the spinner takes to complete one revolution.</summary>
+    /// <summary>Number of seconds the indeterminate spinner takes to complete one revolution.</summary>
     public float PeriodSeconds { get; init; } = 1.1f;
 
     public override Element CreateElement() => new CircularProgressIndicatorElement(this);

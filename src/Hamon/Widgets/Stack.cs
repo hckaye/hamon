@@ -2,29 +2,30 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>How to expand non-locators (Flutter<c>StackFit</c>）。</summary>
+/// <summary>How non-positioned children are sized (equivalent to Flutter's <c>StackFit</c>).</summary>
 public enum StackFit : byte
 {
-    /// <summary>Children are natural size (default). </summary>
+    /// <summary>Children keep their natural size (default).</summary>
     Loose,
 
-    /// <summary>Spread non-placers to fill the Stack.</summary>
+    /// <summary>Non-positioned children are stretched to fill the Stack.</summary>
     Expand,
 }
 
 /// <summary>
-/// Arranging children on top of each other (Flutter<c>Stack</c>). <see cref="Positioned"/>The child of
-/// Absolute position with inset, otherwise<see cref="Alignment"/>Anchor with.
-/// The default size shrinks to the largest non-locator (full available space under tight constraints, such as directly under the root).
+/// Arranges children on top of each other (equivalent to Flutter's <c>Stack</c>). A child wrapped in
+/// <see cref="Positioned"/> is placed absolutely using its insets; other children are anchored using
+/// <see cref="Alignment"/>. By default, the Stack sizes itself to its largest non-positioned child (or fills the
+/// available space under tight constraints, e.g. directly under the root).
 /// </summary>
 public sealed class Stack : Widget, IRenderConfig
 {
     public IReadOnlyList<Widget>? Children { get; init; }
 
-    /// <summary>Non-placer anchor (default<see cref="Alignment.TopLeft"/>）。</summary>
+    /// <summary>Anchor for non-positioned children (default <see cref="Alignment.TopLeft"/>).</summary>
     public Alignment Alignment { get; init; }
 
-    /// <summary>How to spread non-locators (default<see cref="StackFit.Loose"/>）。</summary>
+    /// <summary>How non-positioned children are sized (default <see cref="StackFit.Loose"/>).</summary>
     public StackFit Fit { get; init; }
 
     public Color? Background { get; init; }
@@ -52,9 +53,10 @@ public sealed class Stack : Widget, IRenderConfig
 }
 
 /// <summary>
-/// <see cref="Stack"/>Absolute positioning of children within (Flutter<c>Positioned</c>）。<see cref="Left"/>/<see cref="Top"/>/
-/// <see cref="Right"/>/<see cref="Bottom"/>with the inset of<see cref="Width"/>/<see cref="Height"/>determine the rectangle with
-/// (Stretch by specifying both ends, fixed by specifying one end + size).
+/// Absolute positioning of a child within a <see cref="Stack"/> (equivalent to Flutter's <c>Positioned</c>). The
+/// rectangle is determined by the insets <see cref="Left"/> / <see cref="Top"/> / <see cref="Right"/> /
+/// <see cref="Bottom"/> together with <see cref="Width"/> / <see cref="Height"/> (specify both ends to stretch, or
+/// one end plus a size for a fixed rectangle).
 /// </summary>
 public sealed class Positioned : Widget, IRenderConfig
 {

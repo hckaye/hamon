@@ -3,11 +3,13 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Platform text input/IME bridging abstraction (backend implements<see cref="HamonRoot.TextInput"/>injection).
-/// Notify the state of the focused text field to the OS IME: input start/end (IME/soft keyboard enablement)
-/// Candidate window position (caret rectangle).
-/// <see cref="HamonRoot.DispatchComposition"/>/<see cref="HamonRoot.DispatchText"/>and send it to the core.
-/// Desktop = SDL (<c>SDL_StartTextInput</c>/<c>SDL_SetTextInputRect</c>+ TEXTEDITING monitoring), implemented with mobile = soft keyboard.
+/// The platform text input/IME bridging abstraction (the backend implements this and injects it via
+/// <see cref="HamonRoot.TextInput"/>). Notifies the OS IME of the focused text field's state: input start/end (to
+/// enable/disable the IME or soft keyboard) and the candidate window position (caret rectangle). Composition and
+/// committed text from the IME are fed back into the core via <see cref="HamonRoot.DispatchComposition"/> and
+/// <see cref="HamonRoot.DispatchText"/>. On desktop this is implemented with SDL
+/// (<c>SDL_StartTextInput</c>/<c>SDL_SetTextInputRect</c> plus TEXTEDITING event monitoring); on mobile it is
+/// implemented via the soft keyboard.
 /// </summary>
 public interface ITextInput
 {

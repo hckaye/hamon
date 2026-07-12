@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>Two-color gradient direction (<see cref="IPainter.FillGradient"/>）。</summary>
+/// <summary>Direction of a two-color gradient (used by <see cref="IPainter.FillGradient"/>).</summary>
 public enum GradientAxis : byte
 {
     /// <summary>Top → bottom (a=top, b=bottom).</summary>
@@ -12,7 +12,7 @@ public enum GradientAxis : byte
     Horizontal,
 }
 
-/// <summary>Multi-stage gradation color stopping point (<see cref="PaintContext.FillGradientStops"/>）。<see cref="Position"/>is 0..1.</summary>
+/// <summary>A stop in a multi-stage gradient (used by <see cref="PaintContext.FillGradientStops"/>). <see cref="Position"/> is in the range 0..1.</summary>
 public readonly struct GradientStop
 {
     public GradientStop(float position, Color color)
@@ -26,24 +26,29 @@ public readonly struct GradientStop
     public Color Color { get; }
 }
 
-/// <summary>Composite mode (<see cref="IPainter.PushBlend"/>）。</summary>
+/// <summary>Compositing mode (used by <see cref="IPainter.PushBlend"/>).</summary>
 public enum BlendMode : byte
 {
     /// <summary>Regular alpha compositing (default).</summary>
     Normal,
 
-    /// <summary>Additive synthesis (to the glow of light/flame/magic effects. The more they overlap, the brighter it becomes).</summary>
+    /// <summary>Additive compositing, for glow effects such as light, flame, or magic — the more layers overlap, the brighter the result.</summary>
     Additive,
 }
 
 /// <summary>
-/// Abstract drawing backend (implemented in MonoGame/Godot/Unity, etc.). <b>device space</b>(Conversion applied) - Color is final color
-/// Passed (transform/opacity composition is<see cref="PaintContext"/>It can be done on the side = the back end is only bare primitives).
-/// Rounded corners depend on the engine<see cref="FillRoundedRect"/>also has as a primitive.
+/// An abstract drawing backend (implemented for MonoGame, Godot, Unity, etc.).
+/// Coordinates are already in <b>device space</b> (the transform has been applied),
+/// and colors are already final colors — transform and opacity compositing happens
+/// on the <see cref="PaintContext"/> side, so the backend only needs to handle bare
+/// primitives. Because rounded-corner rendering is engine-dependent,
+/// <see cref="FillRoundedRect"/> is also exposed as a primitive.
 ///
-/// Rich drawing primitives (<see cref="DrawLine"/>/<see cref="FillCircle"/>/<see cref="FillGradient"/>/<see cref="FillShadow"/>/
-/// rotation drawing) is<b>With default implementation</b>= Existing/simple backend will "appropriately deteriorate" without modification (circle → rounded corners/gradation → intermediate color/shadow → no drawing/
-/// rotation → ignored).
+/// The richer drawing primitives (<see cref="DrawLine"/>, <see cref="FillCircle"/>,
+/// <see cref="FillGradient"/>, <see cref="FillShadow"/>, and rotated drawing) all
+/// have <b>default implementations</b>, so an existing or minimal backend degrades
+/// gracefully without any changes (circle → rounded rect, gradient → the midpoint
+/// color, shadow → not drawn, rotation → ignored).
 /// </summary>
 public interface IPainter
 {
@@ -59,12 +64,12 @@ public interface IPainter
 
     void DrawTexture(ITexture texture, Rect dest, RectInt source, Color tint);
 
-    /// <summary>Stack rectangular clips. <see cref="PopClip"/>).</summary>
+    /// <summary>Pushes a rectangular clip onto the stack (release with <see cref="PopClip"/>).</summary>
     object? PushClip(Rect rect);
 
     void PopClip(object? token);
 
-    /// <summary>Thickness<paramref name="thickness"/>line segment<paramref name="a"/>→<paramref name="b"/>draw </summary>
+    /// <summary>Draws a line segment from <paramref name="a"/> to <paramref name="b"/> with the given <paramref name="thickness"/>.</summary>
     void DrawLine(Vec2 a, Vec2 b, float thickness, Color color)
     {
         float half = thickness * 0.5f;
@@ -75,36 +80,36 @@ public interface IPainter
         FillRect(new Rect(minX, minY, w, h), color);
     }
 
-    /// <summary>center<paramref name="center"/>·radius<paramref name="radius"/>filled circle. </summary>
+    /// <summary>Draws a filled circle centered at <paramref name="center"/> with the given <paramref name="radius"/>.</summary>
     void FillCircle(Vec2 center, float radius, Color color) =>
         FillRoundedRect(new Rect(center.X - radius, center.Y - radius, radius * 2f, radius * 2f), color, radius);
 
-    /// <summary>a rectangle<paramref name="a"/>→<paramref name="b"/>Paint with a two-color gradation. </summary>
+    /// <summary>Paints a rectangle with a two-color gradient from <paramref name="a"/> to <paramref name="b"/>.</summary>
     void FillGradient(Rect rect, Color a, Color b, GradientAxis axis) =>
         FillRect(rect, Color.Lerp(a, b, 0.5f));
 
-    /// <summary>A soft shadow (elevation) cast behind the rectangle.<paramref name="blur"/>is the width that bleeds outward. </summary>
+    /// <summary>Casts a soft shadow (elevation) behind the rectangle. <paramref name="blur"/> is the width the shadow bleeds outward.</summary>
     void FillShadow(Rect rect, Color color, float radius, float blur)
     {
     }
 
-    /// <summary><paramref name="pivot"/>(device space)<paramref name="radians"/>Rotated filled rectangle. </summary>
+    /// <summary>Draws a filled rectangle rotated by <paramref name="radians"/> around <paramref name="pivot"/> (in device space).</summary>
     void FillRectRotated(Rect rect, Color color, float radians, Vec2 pivot) => FillRect(rect, color);
 
-    /// <summary><paramref name="pivot"/>(device space)<paramref name="radians"/>Rotated texture drawing. </summary>
+    /// <summary>Draws a texture rotated by <paramref name="radians"/> around <paramref name="pivot"/> (in device space).</summary>
     void DrawTextureRotated(ITexture texture, Rect dest, RectInt source, Color tint, float radians, Vec2 pivot) =>
         DrawTexture(texture, dest, source, tint);
 
-    /// <summary>Loads the composition mode (applies to subsequent drawings). <see cref="PopBlend"/>fart). </summary>
+    /// <summary>Pushes a compositing mode that applies to subsequent draw calls (release with <see cref="PopBlend"/>).</summary>
     object? PushBlend(BlendMode mode) => null;
 
-    /// <summary>Return to compositing mode. </summary>
+    /// <summary>Restores the previous compositing mode.</summary>
     void PopBlend(object? token)
     {
     }
 }
 
-/// <summary>The texture's opaque handle (backend is<see cref="Width"/>/<see cref="Height"/>).</summary>
+/// <summary>An opaque handle to a texture; the backend at least exposes <see cref="Width"/> and <see cref="Height"/>.</summary>
 public interface ITexture
 {
     int Width { get; }

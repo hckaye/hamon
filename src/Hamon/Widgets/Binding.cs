@@ -3,9 +3,10 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Value holder with change notification (Flutter<c>ValueNotifier</c>equivalent).<see cref="State{T}"/>makes the whole tree dirty
-/// However, this is **Subscriber (<see cref="Bind{T}"/>) Notify only ** = avoid full rebuild with frequent updates.
-/// If you change only the contents of the reference type<see cref="Notify"/>Notify manually.
+/// A value holder with change notification (equivalent to Flutter's <c>ValueNotifier</c>). Whereas
+/// <see cref="State{T}"/> marks the whole tree dirty, this **notifies only its subscribers** (<see cref="Bind{T}"/>),
+/// avoiding a full rebuild on frequent updates. If you mutate the contents of a reference type in place, call
+/// <see cref="Notify"/> manually to notify listeners.
 /// </summary>
 public sealed class ValueNotifier<T>
 {
@@ -36,10 +37,11 @@ public sealed class ValueNotifier<T>
 }
 
 /// <summary>
-/// Rebuild only your own subtree due to value changes (Flutter<c>ValueListenableBuilder</c>equivalent).
-/// Reflects frequently changing HUD values ​​(HP/timer, etc.) without reconciling the entire tree.
-/// The values ​​(opacity/transformation/color) are<see cref="Opacity"/>etc.<c>*Getter</c>(Reading when drawing = no need to even reconstruct) is even cheaper.
-/// Future external layout bindings (<c>Find().Bind(...)</c>) is also the core mechanism.
+/// Rebuilds only its own subtree in response to a value change (equivalent to Flutter's <c>ValueListenableBuilder</c>).
+/// Reflects frequently changing HUD values (HP, timer, etc.) without reconciling the entire tree.
+/// Even cheaper: values such as opacity/transform/color on widgets like <see cref="Opacity"/> can be read via a
+/// <c>*Getter</c> at draw time, requiring no rebuild at all. This is also the core mechanism behind future external
+/// layout bindings (<c>Find().Bind(...)</c>).
 /// </summary>
 public sealed class Bind<T> : Widget
 {
@@ -50,7 +52,7 @@ public sealed class Bind<T> : Widget
     public override Element CreateElement() => new BindElement<T>(this);
 }
 
-/// <summary><see cref="Bind{T}"/>holding entity. </summary>
+/// <summary>The Element that hosts a <see cref="Bind{T}"/>.</summary>
 internal sealed class BindElement<T> : Element
 {
     private readonly LayoutNode _node;

@@ -9,11 +9,11 @@ public enum PointerPhase : byte
     Move,
     Up,
 
-    /// <summary>It was taken over by another recognizer (scroll, etc.) in arbitration, and this series was discontinued (tap, etc. did not fire).</summary>
+    /// <summary>The gesture was taken over by another recognizer (e.g. a scroll) during arbitration, so this pointer series was discontinued (tap, etc. did not fire).</summary>
     Cancel,
 }
 
-/// <summary>Pointer event (position is UI coordinates px, time is seconds).<see cref="Timestamp"/>is used for speed estimation and long press/repeat hit determination.</summary>
+/// <summary>A pointer event (position is in UI coordinates, px; time is in seconds). <see cref="Timestamp"/> is used for velocity estimation and for detecting long presses and repeated taps.</summary>
 public readonly struct PointerEvent
 {
     public PointerEvent(Vec2 position, PointerPhase phase, float timestamp = 0f, int pointerId = 0)
@@ -28,17 +28,18 @@ public readonly struct PointerEvent
 
     public PointerPhase Phase { get; }
 
-    /// <summary>Event time (seconds, monotonically increasing). <see cref="HamonRoot"/>will be supplemented with an internal clock upon delivery.</summary>
+    /// <summary>Event time in seconds, monotonically increasing. Filled in by <see cref="HamonRoot"/>'s internal clock at delivery time.</summary>
     public float Timestamp { get; }
 
     /// <summary>
-    /// Pointer (finger) identifier.<see cref="HamonRoot"/>is captured and delivered independently for each ID (multi-touch).
-    /// Default 0 = primary pointer (mouse/single touch).
+    /// Pointer (finger) identifier. <see cref="HamonRoot"/> captures and delivers
+    /// events independently for each ID, enabling multi-touch. Defaults to 0, the
+    /// primary pointer (mouse or single touch).
     /// </summary>
     public int PointerId { get; }
 }
 
-/// <summary>Pinch (two-finger scale) start information (Flutter<c>ScaleStartDetails</c>equivalent).</summary>
+/// <summary>Pinch (two-finger scale) start information (the equivalent of Flutter's <c>ScaleStartDetails</c>).</summary>
 public readonly struct ScaleStartDetails
 {
     public ScaleStartDetails(Vec2 focalPoint, int pointerCount)
@@ -54,7 +55,7 @@ public readonly struct ScaleStartDetails
     public int PointerCount { get; }
 }
 
-/// <summary>Pinch update information (Flutter<c>ScaleUpdateDetails</c>equivalent). </summary>
+/// <summary>Pinch update information (the equivalent of Flutter's <c>ScaleUpdateDetails</c>).</summary>
 public readonly struct ScaleUpdateDetails
 {
     public ScaleUpdateDetails(Vec2 focalPoint, float scale, float rotation, int pointerCount)
@@ -78,12 +79,12 @@ public readonly struct ScaleUpdateDetails
     public int PointerCount { get; }
 }
 
-/// <summary>Pinch end information (Flutter<c>ScaleEndDetails</c>equivalent). </summary>
+/// <summary>Pinch end information (the equivalent of Flutter's <c>ScaleEndDetails</c>).</summary>
 public readonly struct ScaleEndDetails
 {
 }
 
-/// <summary>Drag (one finger pan) start information (Flutter<c>DragStartDetails</c>equivalent).</summary>
+/// <summary>Drag (one finger pan) start information (the equivalent of Flutter's <c>DragStartDetails</c>).</summary>
 public readonly struct DragStartDetails
 {
     public DragStartDetails(Vec2 position) => Position = position;
@@ -92,7 +93,7 @@ public readonly struct DragStartDetails
     public Vec2 Position { get; }
 }
 
-/// <summary>Drag (one finger pan) update information (Flutter<c>DragUpdateDetails</c>equivalent).</summary>
+/// <summary>Drag (one finger pan) update information (the equivalent of Flutter's <c>DragUpdateDetails</c>).</summary>
 public readonly struct DragUpdateDetails
 {
     public DragUpdateDetails(Vec2 position, Vec2 delta)
@@ -108,14 +109,15 @@ public readonly struct DragUpdateDetails
     public Vec2 Delta { get; }
 }
 
-/// <summary>Drag (one finger pan) end information (Flutter<c>DragEndDetails</c>equivalent). </summary>
+/// <summary>Drag (one finger pan) end information (the equivalent of Flutter's <c>DragEndDetails</c>).</summary>
 public readonly struct DragEndDetails
 {
 }
 
 /// <summary>
-/// Detect child pointer operations (Flutter<c>GestureDetector</c>(minimum version).
-/// The sequence from Down is<see cref="HamonRoot"/>captures and delivers to the same element.
+/// Detects pointer gestures on its child (a minimal version of Flutter's
+/// <c>GestureDetector</c>). The sequence starting from Down is captured by
+/// <see cref="HamonRoot"/> and delivered to the same element throughout.
 /// </summary>
 public sealed class GestureDetector : Widget, IRenderConfig
 {
@@ -128,41 +130,48 @@ public sealed class GestureDetector : Widget, IRenderConfig
     public Action? OnTapUp { get; init; }
 
     /// <summary>
-    /// When it is determined that the tap is not successful (Flutter<c>onTapCancel</c>).
-    /// Fires when arbitration is taken by a scroll, etc. (pointer cancel)/disguised as a long press.
+    /// Fires when a tap is determined not to have succeeded (the equivalent of
+    /// Flutter's <c>onTapCancel</c>). This happens when the gesture is taken over
+    /// during arbitration (e.g. by a scroll, via pointer cancel) or when it turns
+    /// into a long press instead.
     /// </summary>
     public Action? OnTapCancel { get; init; }
 
-    /// <summary>Long press (keep pressed and do not move)<see cref="LongPressDuration"/>seconds elapsed). </summary>
+    /// <summary>Fires when the pointer is held down without moving for <see cref="LongPressDuration"/> seconds (a long press).</summary>
     public Action? OnLongPress { get; init; }
 
-    /// <summary>for a short time (<see cref="DoubleTapWindow"/>2 consecutive taps (within seconds). </summary>
+    /// <summary>Fires on two consecutive taps within <see cref="DoubleTapWindow"/> seconds of each other (a double tap).</summary>
     public Action? OnDoubleTap { get; init; }
 
     /// <summary>
-    /// Pinch (two-finger scale) start (Flutter<c>onScaleStart</c>equivalent).
-    /// Any tap/long press in progress will be aborted (<see cref="OnTapCancel"/>）。<b>The child does not take the pointer by itself (= in the hit test
-    /// This element is the front)</b>is condition = visual only child (<c>Container</c>/<c>Image</c>/<c>SceneView</c>(OnPointer not set)).
+    /// Fires when a two-finger pinch (scale) gesture starts (the equivalent of
+    /// Flutter's <c>onScaleStart</c>). Aborts any tap or long press in progress
+    /// (<see cref="OnTapCancel"/>). <b>Requires that the child not claim the pointer
+    /// itself</b> (i.e., this element must be the frontmost hit in the hit test) —
+    /// for example, a purely visual child such as <c>Container</c>, <c>Image</c>, or
+    /// <c>SceneView</c> with no pointer handling of its own.
     /// </summary>
     public Action<ScaleStartDetails>? OnScaleStart { get; init; }
 
-    /// <summary>Pinch update (Flutter<c>onScaleUpdate</c>equivalent). <see cref="ScaleUpdateDetails.Scale"/>/rotation/midpoint.</summary>
+    /// <summary>Fires on pinch updates (the equivalent of Flutter's <c>onScaleUpdate</c>), carrying <see cref="ScaleUpdateDetails.Scale"/>, rotation, and the focal midpoint.</summary>
     public Action<ScaleUpdateDetails>? OnScaleUpdate { get; init; }
 
-    /// <summary>Pinch end (Flutter<c>onScaleEnd</c>equivalent). </summary>
+    /// <summary>Fires when the pinch gesture ends (the equivalent of Flutter's <c>onScaleEnd</c>).</summary>
     public Action<ScaleEndDetails>? OnScaleEnd { get; init; }
 
     /// <summary>
-    /// Start one finger pan (Flutter<c>onPanStart</c>equivalent).
-    /// Any tap/long press in progress will be aborted (<see cref="OnTapCancel"/>). <see cref="OnPanUpdate"/>and distribute delta.
-    /// When the second finger falls<see cref="OnScaleStart"/>Pan was promoted to<see cref="OnPanEnd"/>It ends with
+    /// Fires when a one-finger pan starts (the equivalent of Flutter's
+    /// <c>onPanStart</c>). Aborts any tap or long press in progress
+    /// (<see cref="OnTapCancel"/>) and starts delivering deltas via
+    /// <see cref="OnPanUpdate"/>. If a second finger comes down, the pan is promoted
+    /// to <see cref="OnScaleStart"/> and ends via <see cref="OnPanEnd"/>.
     /// </summary>
     public Action<DragStartDetails>? OnPanStart { get; init; }
 
-    /// <summary>One finger pan update (Flutter<c>onPanUpdate</c>equivalent).<see cref="DragUpdateDetails.Delta"/>Add to the parallel translation.</summary>
+    /// <summary>Fires on one-finger pan updates (the equivalent of Flutter's <c>onPanUpdate</c>). Accumulate <see cref="DragUpdateDetails.Delta"/> to get the total translation.</summary>
     public Action<DragUpdateDetails>? OnPanUpdate { get; init; }
 
-    /// <summary>One finger pan finished (Flutter<c>onPanEnd</c>equivalent). </summary>
+    /// <summary>Fires when a one-finger pan ends (the equivalent of Flutter's <c>onPanEnd</c>).</summary>
     public Action<DragEndDetails>? OnPanEnd { get; init; }
 
     /// <summary>Number of seconds to hold to consider a long press (default 0.5 seconds).</summary>
@@ -180,8 +189,9 @@ public sealed class GestureDetector : Widget, IRenderConfig
 }
 
 /// <summary>
-/// <see cref="GestureDetector"/>holding entity.
-/// <see cref="ITicker"/>(fires when the threshold is exceeded without moving the button while it is pressed).
+/// The <see cref="Element"/> that backs a <see cref="GestureDetector"/> widget.
+/// Implements <see cref="ITicker"/> to detect long presses (fires once the hold
+/// duration is exceeded without the pointer moving beyond the slop threshold).
 /// </summary>
 internal sealed class GestureDetectorElement : RenderElement, ITicker
 {

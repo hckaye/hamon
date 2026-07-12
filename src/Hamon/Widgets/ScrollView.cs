@@ -2,39 +2,39 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>A scrollable viewport entity (<see cref="ScrollView"/>/<see cref="ListView"/>/<see cref="GridView"/>) common operations.</summary>
+/// <summary>Common operations shared by scrollable viewport elements (<see cref="ScrollView"/>/<see cref="ListView"/>/<see cref="GridView"/>).</summary>
 internal interface IScrollable
 {
     float ScrollOffset { get; }
 
-    /// <summary>Scroll direction (determine main axis by gesture arbitration).</summary>
+    /// <summary>Scroll direction, used to determine the main axis for gesture arbitration.</summary>
     Axis ScrollAxis { get; }
 
     void SetScroll(float offset);
 
-    /// <summary>Scrolls the specified rectangle (such as the focus target) as much as necessary so that it is within the viewport (scroll-to-focus).</summary>
+    /// <summary>Scrolls just enough to bring the specified rectangle (e.g. a focus target) within the viewport (scroll-to-focus).</summary>
     void RevealRect(Rect target);
 
-    /// <summary>Wheel/Trackpad = continuous inertial scrolling (adding speed).</summary>
+    /// <summary>Applies a wheel/trackpad delta as continuous inertial scrolling (adds to the current velocity).</summary>
     void ScrollByAnimated(float offsetDelta);
 
-    /// <summary>Gamepad/scroll-to-focus = Glide smoothly to the specified offset (move the target amount).</summary>
+    /// <summary>Used for gamepad navigation/scroll-to-focus: glides smoothly to the specified offset.</summary>
     void AnimateScrollTo(float offset);
 
     /// <summary>Maximum scrollable offset (content − viewport, greater than or equal to 0).</summary>
     float MaxScroll { get; }
 
-    /// <summary>Do you want to enable overscrolling (rubber band + return) at the edges?</summary>
+    /// <summary>Whether overscroll (rubber band + return) is enabled at the edges.</summary>
     bool BounceEnabled { get; }
 
-    /// <summary>Does it accept manual (drag/wheel) scrolling? <see cref="ScrollController"/>・Program control such as scroll-to-focus is possible.</summary>
+    /// <summary>Whether manual (drag/wheel) scrolling is accepted. Programmatic control — via <see cref="ScrollController"/>, scroll-to-focus, etc. — remains possible either way.</summary>
     bool ManualScrollEnabled { get; }
 
-    /// <summary>Scroll movement constants (sensitivity/following/rubber band/inertia). </summary>
+    /// <summary>Scroll movement constants (sensitivity/follow speed/rubber band/inertia).</summary>
     ScrollPhysics Physics { get; }
 }
 
-/// <summary>Common calculation for scroll-to-focus (move offset by the amount that target protrudes from viewport in the main axis direction).</summary>
+/// <summary>Shared scroll-to-focus calculation: moves the offset by however much the target protrudes from the viewport along the main axis.</summary>
 internal static class ScrollReveal
 {
     public static void Reveal(IScrollable scrollable, Rect viewport, Rect target)
@@ -57,8 +57,9 @@ internal static class ScrollReveal
 }
 
 /// <summary>
-/// Scroll position imperative controller (Flutter<c>ScrollController</c>thin version).
-/// <see cref="ScrollView"/>/<see cref="ListView"/>give it to<see cref="JumpTo"/>Change position with /<see cref="Offset"/>Read at.
+/// An imperative controller for scroll position (a thin version of Flutter's <c>ScrollController</c>). Pass it to
+/// a <see cref="ScrollView"/> / <see cref="ListView"/>; change the position with <see cref="JumpTo"/> and read it
+/// with <see cref="Offset"/>.
 /// </summary>
 public sealed class ScrollController
 {
@@ -67,35 +68,36 @@ public sealed class ScrollController
     /// <summary>Current scroll amount (main axis px, 0=start).</summary>
     public float Offset => Target?.ScrollOffset ?? 0f;
 
-    /// <summary>Immediately sets the scroll amount (clamps outside the range).</summary>
+    /// <summary>Immediately sets the scroll amount (values outside the valid range are clamped).</summary>
     public void JumpTo(float offset) => Target?.SetScroll(offset);
 }
 
 /// <summary>
-/// Viewport that scrolls along the main axis (Flutter<c>SingleChildScrollView</c>equivalent).
-/// Measure and overhang<see cref="Axis"/>Scroll and clip in the direction. <see cref="Controller"/>
-/// In programmatic.
+/// A viewport that scrolls along its main axis (equivalent to Flutter's <c>SingleChildScrollView</c>). The child is
+/// measured, and any overhang is scrolled and clipped along <see cref="Axis"/>. Use <see cref="Controller"/> for
+/// programmatic control.
 /// </summary>
 public sealed class ScrollView : Widget, IRenderConfig
 {
     public Widget? Child { get; init; }
 
-    /// <summary>Scroll direction (default<see cref="Axis.Vertical"/>）。</summary>
+    /// <summary>Scroll direction (default <see cref="Axis.Vertical"/>).</summary>
     public Axis Axis { get; init; } = Axis.Vertical;
 
     public ScrollController? Controller { get; init; }
 
-    /// <summary>Overscroll at the edge (rubber band + return). </summary>
+    /// <summary>Whether overscroll (rubber band + return) is enabled at the edges.</summary>
     public bool Bounce { get; init; } = true;
 
     /// <summary>
-    /// Whether to enable manual scrolling (drag/wheel). <b>Disable user interaction scrolling</b>do
-    /// （<see cref="Controller"/>of<see cref="ScrollController.JumpTo"/>・Scroll-to-focus etc.<b>Program control still possible</b>）。
-    /// Flutter <c>NeverScrollableScrollPhysics</c> / iOS <c>isScrollEnabled=false</c>Quite a bit.
+    /// Whether manual scrolling (drag/wheel) is enabled. Set to false to <b>disable user-interaction scrolling</b>
+    /// (<see cref="ScrollController.JumpTo"/> on <see cref="Controller"/>, scroll-to-focus, etc. — <b>programmatic
+    /// control is still possible</b>). Roughly equivalent to Flutter's <c>NeverScrollableScrollPhysics</c> / iOS's
+    /// <c>isScrollEnabled = false</c>.
     /// </summary>
     public bool ManualScroll { get; init; } = true;
 
-    /// <summary>Scroll movement constants (sensitivity/following/rubber band/inertia). <see cref="HamonTheme.ScrollPhysics"/>。</summary>
+    /// <summary>Scroll movement constants (sensitivity/follow speed/rubber band/inertia). Defaults to <see cref="HamonTheme.ScrollPhysics"/> if unspecified.</summary>
     public ScrollPhysics? Physics { get; init; }
 
     public Dimension Width { get; init; }
@@ -117,7 +119,7 @@ public sealed class ScrollView : Widget, IRenderConfig
     public override Element CreateElement() => new ScrollViewElement(this);
 }
 
-/// <summary><see cref="ScrollView"/>holding entity. </summary>
+/// <summary>The element that backs <see cref="ScrollView"/>.</summary>
 internal sealed class ScrollViewElement : RenderElement, IScrollable
 {
     private readonly DragScroller _drag;
@@ -128,7 +130,7 @@ internal sealed class ScrollViewElement : RenderElement, IScrollable
         _drag = new DragScroller(this);
     }
 
-    /// <summary>Current scroll amount (principal px).</summary>
+    /// <summary>Current scroll amount (main-axis px).</summary>
     public float ScrollOffset { get; private set; }
 
     Axis IScrollable.ScrollAxis => ((ScrollView)Widget).Axis;

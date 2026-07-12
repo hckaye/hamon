@@ -3,7 +3,7 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Mouse pointer enters area (Flutter<c>PointerEnterEvent</c>equivalent).<see cref="MouseRegion.OnEnter"/>Delivery to.
+/// The mouse pointer entered the area (equivalent to Flutter's <c>PointerEnterEvent</c>). Delivered to <see cref="MouseRegion.OnEnter"/>.
 /// </summary>
 public readonly struct PointerEnterEvent
 {
@@ -14,8 +14,8 @@ public readonly struct PointerEnterEvent
 }
 
 /// <summary>
-/// The mouse pointer moved within the area (Flutter<c>PointerHoverEvent</c>equivalent).<see cref="MouseRegion.OnHover"/>Delivery to.
-/// Movement without pressing = hover (does not occur with touch = mouse only).
+/// The mouse pointer moved within the area (equivalent to Flutter's <c>PointerHoverEvent</c>). Delivered to <see cref="MouseRegion.OnHover"/>.
+/// Movement without a button pressed counts as hover; this does not occur with touch input (mouse only).
 /// </summary>
 public readonly struct PointerHoverEvent
 {
@@ -26,20 +26,21 @@ public readonly struct PointerHoverEvent
 }
 
 /// <summary>
-/// Mouse pointer leaves area (Flutter<c>PointerExitEvent</c>equivalent).<see cref="MouseRegion.OnExit"/>Delivery to.
+/// The mouse pointer left the area (equivalent to Flutter's <c>PointerExitEvent</c>). Delivered to <see cref="MouseRegion.OnExit"/>.
 /// </summary>
 public readonly struct PointerExitEvent
 {
     public PointerExitEvent(Vec2 position) => Position = position;
 
-    /// <summary>UI coordinates (px) at the time the departure was detected. </summary>
+    /// <summary>UI coordinates (px) at the time the exit was detected.</summary>
     public Vec2 Position { get; }
 }
 
 /// <summary>
-/// Mouse cursor shape to display (Flutter<c>SystemMouseCursors</c>equivalent minimum set).
-/// <see cref="HamonRoot.CurrentCursor"/>is on top while hovering<see cref="MouseRegion"/>Since it reflects the value of
-/// The backend (MonoGame, etc.) maps it to the actual OS cursor (as with physical input, the mapping is on the user side).
+/// The mouse cursor shape to display (a minimal equivalent of Flutter's <c>SystemMouseCursors</c> set).
+/// <see cref="HamonRoot.CurrentCursor"/> reflects the value from the topmost <see cref="MouseRegion"/> currently
+/// being hovered. The backend (e.g. MonoGame) maps it to the actual OS cursor; as with other physical input, the
+/// mapping is the user's responsibility.
 /// </summary>
 public enum MouseCursor : byte
 {
@@ -52,13 +53,13 @@ public enum MouseCursor : byte
     /// <summary>Text selection (I-beam).</summary>
     Text,
 
-    /// <summary>Cannot be operated.</summary>
+    /// <summary>Not operable.</summary>
     Forbidden,
 
-    /// <summary>I can grab it.</summary>
+    /// <summary>Can be grabbed (open hand).</summary>
     Grab,
 
-    /// <summary>I'm grabbing it.</summary>
+    /// <summary>Being grabbed (closed hand).</summary>
     Grabbing,
 
     /// <summary>Left and right resize.</summary>
@@ -72,28 +73,30 @@ public enum MouseCursor : byte
 }
 
 /// <summary>
-/// Area behavior during hit testing (Flutter<c>HitTestBehavior</c>equivalent).
-/// Determines hover occlusion (does it pass through to the area behind it) and whether or not it is possible to hit in an empty area.
+/// Area behavior during hit testing (equivalent to Flutter's <c>HitTestBehavior</c>).
+/// Determines whether hover is occluded (blocked from passing through to the area behind it) and whether an empty
+/// area can be hit at all.
 /// </summary>
 public enum HitTestBehavior : byte
 {
-    /// <summary>Only when the child is hit, will it also be hit (empty areas with no children are transparent).</summary>
+    /// <summary>Only hit when a child is hit (empty areas with no children are transparent).</summary>
     DeferToChild,
 
-    /// <summary>Entire area hit = occluding behind (default opaque).</summary>
+    /// <summary>The entire area is hit and occludes what is behind it (default, opaque).</summary>
     Opaque,
 
-    /// <summary>It also hits you and passes behind you (semi-transparent).</summary>
+    /// <summary>The area is hit but also passes through to what is behind it (translucent).</summary>
     Translucent,
 }
 
 /// <summary>
-/// Detect mouse hover (Flutter<c>MouseRegion</c>).
-/// <see cref="OnEnter"/>/<see cref="OnHover"/>/<see cref="OnExit"/>ignite,<see cref="Cursor"/>present.
+/// Detects mouse hover (equivalent to Flutter's <c>MouseRegion</c>).
+/// Fires <see cref="OnEnter"/>/<see cref="OnHover"/>/<see cref="OnExit"/>, and presents <see cref="Cursor"/>.
 /// <para>
-/// <b>touch/hover separation</b>:hover is<see cref="HamonRoot.DispatchHover"/>Drives just by (mouse movement),
-/// of touch<see cref="HamonRoot.DispatchPointer"/>(Press/Drag) does not fire.
-/// Hover does not occur at all, so do not set up operations assuming hover (press-type is<see cref="GestureDetector"/>/<see cref="Button"/>).
+/// <b>Touch/hover separation</b>: hover is driven only by <see cref="HamonRoot.DispatchHover"/> (mouse movement); it
+/// does not fire from touch <see cref="HamonRoot.DispatchPointer"/> (press/drag). Hover never occurs on touch input
+/// at all, so do not build interactions that assume hover will fire (use press-based widgets such as
+/// <see cref="GestureDetector"/>/<see cref="Button"/> instead).
 /// </para>
 /// </summary>
 public sealed class MouseRegion : Widget, IRenderConfig
@@ -113,8 +116,9 @@ public sealed class MouseRegion : Widget, IRenderConfig
     public MouseCursor Cursor { get; init; } = MouseCursor.Basic;
 
     /// <summary>
-    /// true (default) to block hovering to the area behind (opaque). <see cref="MouseRegion"/>Also passes hover.
-    /// Flutter <c>MouseRegion.opaque</c>Quite a bit.<see cref="HitTestBehavior"/>Opaque/Translucent switching.
+    /// True (default) blocks hover from reaching the area behind this one (opaque); false lets hover pass through to
+    /// the <see cref="MouseRegion"/> behind it as well. Equivalent to Flutter's <c>MouseRegion.opaque</c>; switches
+    /// between <see cref="HitTestBehavior"/> Opaque and Translucent.
     /// </summary>
     public bool Opaque { get; init; } = true;
 
@@ -128,8 +132,8 @@ public sealed class MouseRegion : Widget, IRenderConfig
 }
 
 /// <summary>
-/// A holding entity that can accept hover (<see cref="MouseRegion"/>or<see cref="FocusableActionDetector"/>entity).
-/// <see cref="HamonRoot"/>collects the objects directly under the pointer front-to-back and delivers enter/hover/exit.
+/// A holding entity that can accept hover (the entity for <see cref="MouseRegion"/> or <see cref="FocusableActionDetector"/>).
+/// <see cref="HamonRoot"/> collects the objects directly under the pointer, front-to-back, and delivers enter/hover/exit.
 /// </summary>
 internal interface IHoverTarget
 {
@@ -147,8 +151,8 @@ internal interface IHoverTarget
 }
 
 /// <summary>
-/// <see cref="MouseRegion"/>holding entity. <see cref="HamonRoot"/>but<see cref="HamonRoot.DispatchHover"/>Do it with
-/// Call enter/hover/exit on this entity.
+/// The holding entity for <see cref="MouseRegion"/>. <see cref="HamonRoot"/> calls enter/hover/exit on this entity
+/// as part of <see cref="HamonRoot.DispatchHover"/>.
 /// </summary>
 internal sealed class MouseRegionElement : RenderElement, IHoverTarget
 {

@@ -3,18 +3,20 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// <see cref="InteractiveViewer"/>A controller (Flutter) that maintains and operates the view transformation (scaling + translation) of<c>TransformationController</c>equivalent).
-/// Bread/pinch<see cref="InteractiveViewer"/>From internal gestures to external operations such as buttons<see cref="ZoomIn"/>/<see cref="ZoomOut"/>/
-/// <see cref="Reset"/>Drive from. <see cref="OnChanged"/>(=host redraw request) is fired.
+/// A controller that holds and manipulates the view transform (scale + translation) of an
+/// <see cref="InteractiveViewer"/> (equivalent to Flutter's <c>TransformationController</c>). It can be driven both
+/// by internal pan/pinch gestures within the <see cref="InteractiveViewer"/> and by external operations such as
+/// button-triggered <see cref="ZoomIn"/>/<see cref="ZoomOut"/>/<see cref="Reset"/> calls. <see cref="OnChanged"/> is
+/// fired whenever the transform changes (i.e. a host redraw request).
 /// </summary>
 public sealed class InteractiveViewerController
 {
     private Transform2D _value = Transform2D.Identity;
 
-    /// <summary>When the transformation changes (due to a redraw request)<see cref="InteractiveViewer"/>).</summary>
+    /// <summary>Fired when the transform changes (used by <see cref="InteractiveViewer"/> as a redraw request).</summary>
     internal Action? OnChanged;
 
-    /// <summary>Viewport rectangle (<see cref="InteractiveViewer"/>(Notify when drawing).<see cref="ZoomIn"/>/<see cref="ZoomOut"/>Use the fulcrum = center.</summary>
+    /// <summary>The viewport rectangle, reported by <see cref="InteractiveViewer"/> when it draws. <see cref="ZoomIn"/>/<see cref="ZoomOut"/> zoom about its center.</summary>
     internal Rect Viewport;
 
     /// <summary>Minimum magnification (default 0.5).</summary>
@@ -23,37 +25,37 @@ public sealed class InteractiveViewerController
     /// <summary>Maximum magnification (default 4.0).</summary>
     public float MaxScale { get; set; } = 4f;
 
-    /// <summary>Current magnification (1=normal).</summary>
+    /// <summary>The current magnification (1 = normal).</summary>
     public float Scale => _value.Scale.X;
 
-    /// <summary>Center of viewport as fulcrum<paramref name="factor"/>Zoom in twice (for + button).</summary>
+    /// <summary>Zooms in by <paramref name="factor"/> about the center of the viewport (for a + button).</summary>
     public void ZoomIn(float factor = 1.25f) => ZoomAbout(Center(), factor);
 
-    /// <summary>Reduce the viewport using the center as the fulcrum (for - button).</summary>
+    /// <summary>Zooms out by <paramref name="factor"/> about the center of the viewport (for a - button).</summary>
     public void ZoomOut(float factor = 1.25f) => ZoomAbout(Center(), 1f / factor);
 
-    /// <summary>Same size/return to origin.</summary>
+    /// <summary>Resets to the original size and position.</summary>
     public void Reset() => SetRaw(Transform2D.Identity);
 
     internal Transform2D Value => _value;
 
     internal void SetViewport(Rect viewport) => Viewport = viewport; // 通知しない（描画中の呼び出し＝ループ防止）
 
-    /// <summary><paramref name="delta"/>Translate by (viewport coordinates).</summary>
+    /// <summary>Translates by <paramref name="delta"/> (viewport coordinates).</summary>
     internal void PanBy(Vec2 delta) =>
         SetRaw(new Transform2D(_value.Scale, new Vec2(_value.Translate.X + delta.X, _value.Translate.Y + delta.Y)));
 
-    /// <summary><paramref name="focal"/>Keep the content point pointed to by (viewport coordinates) fixed<paramref name="factor"/>Zoom in twice.</summary>
+    /// <summary>Zooms by <paramref name="factor"/> while keeping the content point under <paramref name="focal"/> (viewport coordinates) fixed.</summary>
     internal void ZoomAbout(Vec2 focal, float factor) => ApplyZoom(focal, ContentAt(focal), _value.Scale.X * factor);
 
-    /// <summary>with the current conversion<paramref name="focal"/>Content coordinates pointed to by (viewport coordinates). </summary>
+    /// <summary>Returns the content coordinates under <paramref name="focal"/> (viewport coordinates), using the current transform.</summary>
     internal Vec2 ContentAt(Vec2 focal)
     {
         float s = _value.Scale.X == 0f ? 1f : _value.Scale.X;
         return new Vec2((focal.X - _value.Translate.X) / s, (focal.Y - _value.Translate.Y) / s);
     }
 
-    /// <summary><paramref name="anchorContent"/>(content coordinates)<paramref name="focal"/>Below (viewport coordinates)<paramref name="newScale"/>Match with</summary>
+    /// <summary>Sets the scale to <paramref name="newScale"/> while keeping <paramref name="anchorContent"/> (content coordinates) aligned under <paramref name="focal"/> (viewport coordinates).</summary>
     internal void ApplyZoom(Vec2 focal, Vec2 anchorContent, float newScale)
     {
         float ns = Math.Clamp(newScale, MinScale, MaxScale);
@@ -71,22 +73,25 @@ public sealed class InteractiveViewerController
 }
 
 /// <summary>
-/// While panning/zooming the child<b>Make use of child operations (tap, etc.)</b>Container (Flutter<c>InteractiveViewer</c>equivalent).
-/// inside<see cref="GestureDetector"/>is the free space<b>1 finger drag = pan / 2 finger pinch = zoom</b>and the conversion is
-/// <see cref="InteractiveViewerController"/>(External operations such as +/- buttons also go through the same controller).
-/// <see cref="Transform2D"/>Draw + clip with , hit test/pointer delivery is the inverse transformation (<see cref="Element.ChildHitTestTransform"/>)in
-/// Since it is copied to the child coordinates, the hit detection of buttons etc. will match the display even during scaling/parallel movement.
+/// A container that pans/zooms its child while still <b>allowing child interactions (taps, etc.) to work</b>
+/// (equivalent to Flutter's <c>InteractiveViewer</c>). Internally, a <see cref="GestureDetector"/> covering the free
+/// space handles <b>one-finger drag = pan / two-finger pinch = zoom</b>, and the resulting transform is applied via
+/// an <see cref="InteractiveViewerController"/> (external operations such as +/- buttons go through the same
+/// controller). The child is drawn with a <see cref="Transform2D"/> and clipped, while hit testing/pointer delivery
+/// uses the inverse transform (<see cref="Element.ChildHitTestTransform"/>) so hit detection for buttons, etc.,
+/// remains aligned with what is displayed even while scaling or panning.
 /// <para>
-/// child to parent (viewport) coordinates<b>As is</b>Layout, pan/zoom conversion only = no camera calculation required on child side.
-/// Start from an area not covered by the pointer receiver (gap/background). <see cref="InteractiveViewerController.Reset"/>).
+/// The child is laid out in parent (viewport) coordinates <b>as-is</b>; only the pan/zoom transform is applied on
+/// top, so no camera calculations are required on the child's side. Pans/zooms only start from an area not covered
+/// by a pointer-consuming child (a gap or the background). See also <see cref="InteractiveViewerController.Reset"/>.
 /// </para>
 /// </summary>
 public sealed class InteractiveViewer : HookWidget
 {
-    /// <summary>Child to pan/zoom to.</summary>
+    /// <summary>The child to pan/zoom.</summary>
     public Widget? Child { get; init; }
 
-    /// <summary>Controller to be shared/operated externally (generated internally if not specified). </summary>
+    /// <summary>The controller to share/operate externally (created internally if not specified).</summary>
     public InteractiveViewerController? Controller { get; init; }
 
     /// <summary>Minimum magnification (default 0.5).</summary>
@@ -136,7 +141,7 @@ public sealed class InteractiveViewer : HookWidget
     }
 }
 
-/// <summary>Pinch (two fingers) to hold the zoom start anchor and scale while keeping the starting content point under focus (<see cref="InteractiveViewer"/>internal).</summary>
+/// <summary>Holds the zoom start scale and anchor point for a two-finger pinch, keeping the starting content point under focus (internal to <see cref="InteractiveViewer"/>).</summary>
 internal sealed class InteractiveViewerPinch
 {
     private float _startScale = 1f;
@@ -153,8 +158,10 @@ internal sealed class InteractiveViewerPinch
 }
 
 /// <summary>
-/// child<see cref="Transform2D"/>An internal element that draws + (optionally) clips to the viewport and provides inverse transformation for hit testing/shipping.
-/// drawing only<see cref="Transform"/>Unlike<see cref="Element.ChildHitTestTransform"/>, so the child remains interactive.
+/// An internal widget that draws its child with a <see cref="Transform2D"/> and (optionally) clips it to the
+/// viewport, providing the inverse transform for hit testing/pointer delivery. Unlike drawing, which applies
+/// <see cref="Transform"/> only, hit testing uses <see cref="Element.ChildHitTestTransform"/>, so the child remains
+/// interactive.
 /// </summary>
 internal sealed class TransformViewport : Widget, IRenderConfig
 {
@@ -164,7 +171,7 @@ internal sealed class TransformViewport : Widget, IRenderConfig
 
     public bool Clip { get; init; } = true;
 
-    /// <summary>Viewport rectangle (confirmed) when drawing<c>Bounds</c>) (used as the center/fulcrum of the controller).</summary>
+    /// <summary>The viewport rectangle (the finalized <c>Bounds</c>) when drawing, used by the controller as its center/pivot.</summary>
     public Action<Rect>? OnLayout { get; init; }
 
     // 単一子パススルー（子はビューポートを充填）。レイアウトは透過し、描画とヒットテストに変換を掛ける。

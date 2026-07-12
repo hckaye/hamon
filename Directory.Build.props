@@ -1,8 +1,7 @@
 <Project>
 
-  <!-- Hamon 全プロジェクト共通の拘束ルール（自己完結＝OSS抽出時もそのまま持ち出せる）。
-       TargetFramework は各 .csproj で個別指定する（基準=net8.0）。
-       品質基準は vlo の coding-standards を Hamon 自身の規約として継承する。 -->
+  <!-- Hamon 全プロジェクト共通の設定。
+       TargetFramework は各 .csproj で個別指定する（基準=net8.0）。 -->
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -12,7 +11,7 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
     <VersionPrefix>0.1.0</VersionPrefix>
-    <VersionSuffix Condition="'$(VersionSuffix)' == ''">alpha.1</VersionSuffix>
+    <VersionSuffix Condition="'$(VersionSuffix)' == ''">alpha.2</VersionSuffix>
     <!-- Applications and tests are not packages unless a library opts in explicitly. -->
     <IsPackable>false</IsPackable>
   </PropertyGroup>

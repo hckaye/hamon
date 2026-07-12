@@ -1,6 +1,5 @@
 using Hamon.Layout;
 using Hamon.Widgets;
-using System.Linq;
 
 namespace Hamon.SampleApp;
 
@@ -35,13 +34,31 @@ public sealed class TodoApp : HookWidget
             string text = input.Text.Trim();
             if (text.Length > 0)
             {
-                setItems(items.Append(new TodoItem(text)).ToArray());
+                // Append＝新配列を1つだけ確保して既存要素をコピー（LINQ の Append().ToArray() より割り当てが少ない）。
+                var next = new TodoItem[items.Length + 1];
+                Array.Copy(items, next, items.Length);
+                next[items.Length] = new TodoItem(text);
+                setItems(next);
                 input.SetText(string.Empty);
             }
         }
 
-        TodoItem[] visible = items.Where(t => filter switch { 1 => !t.Done, 2 => t.Done, _ => true }).ToArray();
-        int active = items.Count(t => !t.Done);
+        // フィルタ適用は Build ごと（描画中は毎フレーム）に走るのでホットパス。LINQ を避け明示ループで組む。
+        var visible = new List<TodoItem>(items.Length);
+        int active = 0;
+        foreach (TodoItem item in items)
+        {
+            if (!item.Done)
+            {
+                active++;
+            }
+
+            bool show = filter switch { 1 => !item.Done, 2 => item.Done, _ => true };
+            if (show)
+            {
+                visible.Add(item);
+            }
+        }
 
         Widget FilterButton(string label, int value) => new Button
         {
@@ -72,7 +89,16 @@ public sealed class TodoApp : HookWidget
                             {
                                 Node = new FocusNode(),
                                 Value = item.Done,
-                                OnChanged = _ => setItems(items.Select(t => ReferenceEquals(t, item) ? item.Toggled() : t).ToArray()),
+                                OnChanged = _ =>
+                                {
+                                    var next = new TodoItem[items.Length];
+                                    for (int i = 0; i < items.Length; i++)
+                                    {
+                                        next[i] = ReferenceEquals(items[i], item) ? item.Toggled() : items[i];
+                                    }
+
+                                    setItems(next);
+                                },
                             },
                             new Text(item.Text)
                             {
@@ -86,7 +112,19 @@ public sealed class TodoApp : HookWidget
                         Node = new FocusNode(),
                         Background = theme.SurfaceVariant,
                         Padding = EdgeInsets.Symmetric(10f, 6f),
-                        OnPressed = () => setItems(items.Where(t => !ReferenceEquals(t, item)).ToArray()),
+                        OnPressed = () =>
+                        {
+                            var next = new List<TodoItem>(items.Length);
+                            foreach (TodoItem t in items)
+                            {
+                                if (!ReferenceEquals(t, item))
+                                {
+                                    next.Add(t);
+                                }
+                            }
+
+                            setItems(next.ToArray());
+                        },
                         Child = new Text("✕") { FontSize = 16f, Color = theme.Danger },
                     },
                 },
@@ -151,7 +189,7 @@ public sealed class TodoApp : HookWidget
                                     {
                                         new ListView
                                         {
-                                            ItemCount = visible.Length,
+                                            ItemCount = visible.Count,
                                             EstimatedExtent = 52f,
                                             Builder = index => Row_(visible[index]),
                                         },
@@ -170,7 +208,19 @@ public sealed class TodoApp : HookWidget
                                         Node = new FocusNode(),
                                         Background = theme.SurfaceVariant,
                                         Padding = EdgeInsets.Symmetric(12f, 8f),
-                                        OnPressed = () => setItems(items.Where(t => !t.Done).ToArray()),
+                                        OnPressed = () =>
+                                        {
+                                            var next = new List<TodoItem>(items.Length);
+                                            foreach (TodoItem t in items)
+                                            {
+                                                if (!t.Done)
+                                                {
+                                                    next.Add(t);
+                                                }
+                                            }
+
+                                            setItems(next.ToArray());
+                                        },
                                         Child = new Text("完了を消す") { FontSize = 14f, Color = theme.OnSurface },
                                     },
                                 },

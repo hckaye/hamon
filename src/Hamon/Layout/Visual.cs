@@ -34,7 +34,7 @@ public readonly struct Vec2 : IEquatable<Vec2>
     public override string ToString() => $"Vec2({X}, {Y})";
 }
 
-/// <summary>Integer rectangle (partial area of ​​texture = cell of sprite sheet, etc.).</summary>
+/// <summary>Integer rectangle (a partial area of a texture, e.g. a cell in a sprite sheet).</summary>
 public readonly struct RectInt : IEquatable<RectInt>
 {
     public RectInt(int x, int y, int width, int height)

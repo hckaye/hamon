@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Hamon.Widgets;
 
-/// <summary>Three states of asynchronous values ​​(jotai's async atom without Suspense).</summary>
+/// <summary>The three states of an asynchronous value (jotai's async atom, without Suspense).</summary>
 public enum AsyncState : byte
 {
     Loading,
@@ -11,7 +11,7 @@ public enum AsyncState : byte
     Error,
 }
 
-/// <summary>Asynchronous load results (loading/data/errors).<c>Hooks.UseAsync</c>returns.</summary>
+/// <summary>The result of an asynchronous load (loading/data/error), returned by <c>Hooks.UseAsync</c>.</summary>
 public readonly struct AsyncValue<T>
 {
     private AsyncValue(AsyncState state, T? data, Exception? error)
@@ -41,10 +41,12 @@ public readonly struct AsyncValue<T>
 }
 
 /// <summary>
-/// Hook-enabled composition widget (like React/flutter_hooks).<see cref="Build(BuildContext, Hooks)"/>within
-/// <c>hooks.UseState/UseFocusNode/UseAnimation/Watch</c>call.
-/// When the state changes, **only this subtree is automatically rebuilt** (manual Invalidate is not required and all tree reconciles are avoided).
-/// Call hooks in the same order every time (do not increase or decrease using conditional branches = same rule as React).
+/// A hook-enabled composition widget (like React or flutter_hooks). Inside <see cref="Build(BuildContext, Hooks)"/>,
+/// call <c>hooks.UseState</c>/<c>UseFocusNode</c>/<c>UseAnimation</c>/<c>Watch</c>, etc.
+/// When the state changes, <b>only this subtree is automatically rebuilt</b> — no manual Invalidate is needed, and a
+/// full tree reconcile is avoided.
+/// Call hooks in the same order every time (do not add or remove hook calls via conditional branches — the same rule
+/// as React).
 /// </summary>
 public abstract class HookWidget : Widget
 {
@@ -53,7 +55,7 @@ public abstract class HookWidget : Widget
     public override Element CreateElement() => new HookElement(this);
 }
 
-/// <summary>State cell (<c>UseState</c>return).<see cref="Value"/>If you change , only the subtree of the owned element will be rebuilt.</summary>
+/// <summary>A state cell returned by <c>UseState</c>. Changing <see cref="Value"/> rebuilds only the subtree of the owning element.</summary>
 public sealed class HookState<T>
 {
     private readonly HookElement _element;
@@ -79,40 +81,41 @@ public sealed class HookState<T>
     }
 }
 
-/// <summary>A window that supplies hooks during Build (<see cref="HookElement"/>(retain one and reuse).</summary>
+/// <summary>Supplies hooks during Build. <see cref="HookElement"/> keeps a single instance and reuses it.</summary>
 public sealed class Hooks
 {
     private readonly HookElement _element;
 
     internal Hooks(HookElement element) => _element = element;
 
-    /// <summary>A state that persists on an element. </summary>
+    /// <summary>A state value that persists on the element.</summary>
     public HookState<T> UseState<T>(T initial) => _element.Cell(() => new HookState<T>(_element, initial));
 
-    /// <summary>Generates only once and persists it to the element (equivalent to React useMemo (independent)/useRef). </summary>
+    /// <summary>Creates a value once and persists it on the element (equivalent to React's useMemo with no dependencies, or useRef).</summary>
     public T UseMemo<T>(Func<T> create) => _element.Cell(create);
 
-    /// <summary>persist to the element<see cref="FocusNode"/>(No need to maintain in external member).</summary>
+    /// <summary>Creates and persists a <see cref="FocusNode"/> on the element (no need to hold it as an external member).</summary>
     public FocusNode UseFocusNode() => _element.Cell(() => new FocusNode());
 
-    /// <summary>persist to the element<see cref="AnimationController"/>(Automatically stops with Unmount).</summary>
+    /// <summary>Creates and persists an <see cref="AnimationController"/> on the element (automatically stopped on Unmount).</summary>
     public AnimationController UseAnimation(float durationSeconds, Curve? curve = null) =>
         _element.Cell(() => _element.Owner.CreateAnimation(durationSeconds, curve));
 
-    /// <summary>Subscribe to atom and return the current value (rebuild only this subtree when changed).</summary>
+    /// <summary>Subscribes to an atom and returns its current value (only this subtree is rebuilt when it changes).</summary>
     public T Watch<T>(Atom<T> atom) => _element.Watch(atom);
 
-    /// <summary>atom's (current value, set function). </summary>
+    /// <summary>Returns the atom's current value together with a setter function.</summary>
     public (T Value, Action<T> Set) UseAtom<T>(Atom<T> atom) =>
         (_element.Watch(atom), value => _element.SetAtom(atom, value));
 
-    /// <summary>A resetter that returns atom to its initial value (jotai<c>useResetAtom</c>equivalent).</summary>
+    /// <summary>Returns a resetter that restores the atom to its initial value (equivalent to jotai's <c>useResetAtom</c>).</summary>
     public Action UseReset<T>(Atom<T> atom) => () => _element.ResetAtom(atom);
 
     /// <summary>
-    /// Asynchronous loading (equivalent to jotai's async atom).<paramref name="key"/>Every time (and the first time)<paramref name="loader"/>of
-    /// run and see the results<see cref="AsyncValue{T}"/>Return by (Loading→Data/Error). <see cref="HamonRoot.Post"/>in
-    /// Thread safe as it returns to the UI thread.
+    /// Asynchronous loading (equivalent to jotai's async atom). Runs <paramref name="loader"/> whenever
+    /// <paramref name="key"/> changes (including the first time), and returns the outcome as an
+    /// <see cref="AsyncValue{T}"/> (Loading → Data/Error). Thread-safe, since the result is delivered back to the UI
+    /// thread via <see cref="HamonRoot.Post"/>.
     /// </summary>
     public AsyncValue<T> UseAsync<T>(Func<Task<T>> loader, object? key = null)
     {
@@ -144,8 +147,9 @@ public sealed class Hooks
     }
 
     /// <summary>
-    /// <paramref name="key"/>When (and for the first time) changes<paramref name="effect"/>Execute.
-    /// <see cref="Action"/>is a cleanup (called before the next execution and at Unmount = unsubscribe/timer destruction, etc.).
+    /// Runs <paramref name="effect"/> whenever <paramref name="key"/> changes (including the first time). The
+    /// returned <see cref="Action"/> is a cleanup callback (invoked before the next run and on Unmount, e.g. to
+    /// unsubscribe or dispose a timer).
     /// </summary>
     public void UseEffect(Func<Action?> effect, object? key = null)
     {
@@ -179,8 +183,8 @@ public sealed class Hooks
 }
 
 /// <summary>
-/// <see cref="HookWidget"/>holding entity.
-/// on hook state/atom change<see cref="RebuildInPlace"/>= Rebuild only this subtree.
+/// The holding entity for <see cref="HookWidget"/>.
+/// On a hook state/atom change, <see cref="RebuildInPlace"/> rebuilds only this subtree.
 /// </summary>
 internal sealed class HookElement : Element
 {
@@ -205,7 +209,7 @@ internal sealed class HookElement : Element
     public override IReadOnlyList<Element> Children => _childArray;
 
     internal IHamonHost Owner => Context.Owner
-        ?? throw new InvalidOperationException("HookWidget には HamonRoot が要る（フックの状態/アニメ/atom 管理に使う）。");
+        ?? throw new InvalidOperationException("HookWidget requires a HamonRoot (used to manage hook state/animation/atoms).");
 
     public override void Mount(Element? parent, BuildContext context)
     {
@@ -249,7 +253,7 @@ internal sealed class HookElement : Element
 
     internal void MarkSelfDirty() => Context.Owner?.MarkElementDirty(this);
 
-    /// <summary>Position-dependent cells: generated and stored for the first time, then reused in the same order (permanent).</summary>
+    /// <summary>A position-dependent cell: created and stored the first time, then reused in the same call order on every rebuild.</summary>
     internal T Cell<T>(Func<T> create)
     {
         if (_cursor == _cells.Count)

@@ -4,8 +4,8 @@ using System.Globalization;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Clipboard abstract (copy/cut/paste).
-/// <see cref="HamonRoot.Clipboard"/>Inject into. <see cref="InMemoryClipboard"/>(in process).
+/// Abstraction over the clipboard (copy/cut/paste).
+/// Injected via <see cref="HamonRoot.Clipboard"/>; <see cref="InMemoryClipboard"/> provides an in-process default.
 /// </summary>
 public interface IClipboard
 {
@@ -14,7 +14,7 @@ public interface IClipboard
     void SetText(string text);
 }
 
-/// <summary>In-process clipboard (default without OS coordination. Copying and pasting is possible in testing/single operation).</summary>
+/// <summary>Default in-process clipboard with no OS coordination. Copy and paste only work within a single process (e.g., for testing).</summary>
 public sealed class InMemoryClipboard : IClipboard
 {
     private string _text = string.Empty;
@@ -25,9 +25,10 @@ public sealed class InMemoryClipboard : IClipboard
 }
 
 /// <summary>
-/// Single line text editing status (Flutter<c>TextEditingController</c>equivalent). <b>selection range</b>hold,
-/// Make the host dirty by updating it with an edit operation. <b>grapheme cluster (grapheme cluster / surrogate pair)</b>
-/// Do it in units. <see cref="TextField"/>(not recreated by rebuilding).
+/// Text editing state for a <see cref="TextField"/> (equivalent to Flutter's <c>TextEditingController</c>).
+/// Holds the <b>selection range</b> and marks the host dirty whenever an edit operation updates it.
+/// Caret and selection movement operate in <b>grapheme cluster</b> units (surrogate pairs and combining
+/// characters are each treated as a single unit). Owned by <see cref="TextField"/> and not recreated on rebuild.
 /// </summary>
 public sealed class TextEditingController
 {
@@ -41,7 +42,7 @@ public sealed class TextEditingController
         _anchor = Caret;
     }
 
-    /// <summary>Connect to host (<see cref="TextField"/>called at build/mount time = destination for redraw notifications on edit). </summary>
+    /// <summary>Connects to the host. Called by <see cref="TextField"/> at build/mount time; the host becomes the destination for redraw notifications on edit.</summary>
     internal void Attach(IHamonHost host) => _host = host;
 
     public string Text { get; private set; }
@@ -61,7 +62,7 @@ public sealed class TextEditingController
     /// <summary>Selected string (empty if none).</summary>
     public string SelectedText => HasSelection ? Text.Substring(SelectionStart, SelectionEnd - SelectionStart) : string.Empty;
 
-    /// <summary>IME text being converted (preedit). </summary>
+    /// <summary>IME text currently being composed (preedit).</summary>
     public string Composition { get; private set; } = string.Empty;
 
     /// <summary>Caret position in the text being converted (0..Composition.Length).</summary>
@@ -69,7 +70,7 @@ public sealed class TextEditingController
 
     public Action<string>? OnChanged { get; set; }
 
-    /// <summary>Set the text being converted for the IME (not yet finalized =<see cref="Text"/>cannot be changed). </summary>
+    /// <summary>Sets the IME composition text (preedit). This text is not yet committed, so it does not change <see cref="Text"/>.</summary>
     public void SetComposition(string preedit, int caret)
     {
         string value = preedit ?? string.Empty;
@@ -93,7 +94,7 @@ public sealed class TextEditingController
         InsertString(c.ToString());
     }
 
-    /// <summary>Insert a character string (replace while selected/confirm and insert while converting IME). </summary>
+    /// <summary>Inserts a string, replacing the current selection if any. Also commits any in-progress IME composition before inserting.</summary>
     public void InsertString(string s)
     {
         if (string.IsNullOrEmpty(s))
@@ -155,25 +156,25 @@ public sealed class TextEditingController
 
     public void MoveRight() => Collapse(HasSelection ? SelectionEnd : NextGrapheme(Caret));
 
-    /// <summary>Go to the beginning of the line (for multiple lines, to the beginning of the current line). </summary>
+    /// <summary>Moves the caret to the beginning of the line (the current line, for multi-line text).</summary>
     public void Home() => Collapse(LineStart(Caret));
 
-    /// <summary>To the end of the line (or the end of the current line for multiple lines). </summary>
+    /// <summary>Moves the caret to the end of the line (the current line, for multi-line text).</summary>
     public void End() => Collapse(LineEnd(Caret));
 
-    /// <summary>Up one row (keep columns). </summary>
+    /// <summary>Moves the caret up one row, keeping the column position.</summary>
     public void MoveUp() => Collapse(VerticalCaret(-1));
 
-    /// <summary>One row down (keep columns). </summary>
+    /// <summary>Moves the caret down one row, keeping the column position.</summary>
     public void MoveDown() => Collapse(VerticalCaret(+1));
 
-    /// <summary>Caret line number (0-based, \n delimited).</summary>
+    /// <summary>The caret's line number (0-based, delimited by \n).</summary>
     public int CaretLine => LineIndexOf(Caret);
 
-    /// <summary>Caret column number (char number from the beginning of the current line).</summary>
+    /// <summary>The caret's column number (character offset from the beginning of the current line).</summary>
     public int CaretColumn => Caret - LineStart(Caret);
 
-    /// <summary>Number of lines (number of \n + 1).</summary>
+    /// <summary>The number of lines (the number of \n characters, plus one).</summary>
     public int LineCount
     {
         get
@@ -233,10 +234,10 @@ public sealed class TextEditingController
         }
     }
 
-    /// <summary>Paste the contents of the clipboard (replace if selected).</summary>
+    /// <summary>Pastes the clipboard contents, replacing the selection if one exists.</summary>
     public void Paste(IClipboard clipboard) => InsertString(clipboard.GetText());
 
-    /// <summary>Replace text (caret/clamp selection to range = cancel selection).</summary>
+    /// <summary>Replaces the text, clamping the caret to the new range and clearing the selection.</summary>
     public void SetText(string text)
     {
         Text = text ?? string.Empty;
@@ -245,7 +246,7 @@ public sealed class TextEditingController
         Changed();
     }
 
-    /// <summary>Directly set caret and selection edge (for tap/drag selection).<paramref name="extend"/>Expand selection with =true.</summary>
+    /// <summary>Directly sets the caret position (for tap/drag selection). Pass <paramref name="extend"/>=true to extend the current selection instead of collapsing it.</summary>
     public void SetSelection(int caret, bool extend = false)
     {
         Caret = Math.Clamp(caret, 0, Text.Length);
@@ -395,9 +396,9 @@ public sealed class TextEditingController
 }
 
 /// <summary>
-/// Single line text input (Flutter<c>TextField</c>equivalent minimum version).
-/// <see cref="HamonRoot.DispatchText"/>/<see cref="HamonRoot.DispatchEditKey"/>Receive characters/edit keys via.
-/// The caret is blinking (<see cref="AnimationController"/>), long text scrolls horizontally to keep the caret within the screen.
+/// Single-line (or multi-line) text input widget (a minimal equivalent of Flutter's <c>TextField</c>).
+/// Receives characters and edit keys via <see cref="HamonRoot.DispatchText"/> / <see cref="HamonRoot.DispatchEditKey"/>.
+/// The caret blinks using an <see cref="AnimationController"/>, and long text scrolls horizontally to keep the caret visible.
 /// </summary>
 public sealed class TextField : Widget
 {
@@ -409,7 +410,7 @@ public sealed class TextField : Widget
 
     public string Placeholder { get; init; } = string.Empty;
 
-    /// <summary>Accessibility label (read by screen readers. If not specified, Placeholder is assumed to be used for assistance).</summary>
+    /// <summary>Accessibility label read by screen readers. If not specified, the placeholder text is used instead.</summary>
     public string? SemanticLabel { get; init; }
 
     public float FontSize { get; init; } = 16f;
@@ -420,35 +421,35 @@ public sealed class TextField : Widget
 
     public Color? CaretColor { get; init; }
 
-    /// <summary>Highlight color of the selection (if not specified, the theme's Primary will be semi-transparent).</summary>
+    /// <summary>Highlight color for the selection. If not specified, a semi-transparent version of the theme's Primary color is used.</summary>
     public Color? SelectionColor { get; init; }
 
     public Color? Background { get; init; }
 
     public EdgeInsets Padding { get; init; } = EdgeInsets.Symmetric(10f, 8f);
 
-    /// <summary>Width (Auto=full available width).</summary>
+    /// <summary>Width (Auto means the full available width).</summary>
     public Dimension Width { get; init; }
 
-    /// <summary>Multi-line input (if true, Enter inserts a line break and the height follows the number of lines).</summary>
+    /// <summary>Enables multi-line input. When true, Enter inserts a line break and the height grows with the number of lines.</summary>
     public bool Multiline { get; init; }
 
-    /// <summary>Maximum number of displayed lines when multiple lines are displayed (height upper limit. Excess lines are assumed to be scrolled. Default 6).</summary>
+    /// <summary>Maximum number of visible lines in multi-line mode (an upper bound on height; additional lines scroll). Defaults to 6.</summary>
     public int MaxLines { get; init; } = 6;
 
-    /// <summary>Minimum number of lines to display when multiple lines are displayed (lower height limit; default 1).</summary>
+    /// <summary>Minimum number of visible lines in multi-line mode (a lower bound on height). Defaults to 1.</summary>
     public int MinLines { get; init; } = 1;
 
-    /// <summary>When Enter is pressed (confirmed). </summary>
+    /// <summary>Invoked when Enter is pressed to submit the text.</summary>
     public Action<string>? OnSubmitted { get; init; }
 
-    /// <summary>Gain/Loss Focus<see cref="WidgetState"/>Notification (custom animation such as making the frame shine when focused).</summary>
+    /// <summary>Notifies of focus gain/loss via <see cref="WidgetState"/>, e.g. to drive a custom animation such as highlighting the border when focused.</summary>
     public Action<WidgetState>? OnStateChanged { get; init; }
 
     public override Element CreateElement() => new TextFieldElement(this);
 }
 
-/// <summary><see cref="TextField"/>holding entity. </summary>
+/// <summary>The <see cref="Element"/> that backs a <see cref="TextField"/>.</summary>
 internal sealed class TextFieldElement : Element
 {
     private readonly LayoutNode _node;
@@ -470,7 +471,7 @@ internal sealed class TextFieldElement : Element
     private TextField Widget_ => (TextField)Widget;
 
     private ITextRenderer Renderer => Context.Text
-        ?? throw new InvalidOperationException("TextField の計測/描画には ITextRenderer が要る（HamonRoot 経由）。");
+        ?? throw new InvalidOperationException("TextField requires an ITextRenderer to measure/paint (supplied via HamonRoot).");
 
     public override void Mount(Element? parent, BuildContext context)
     {

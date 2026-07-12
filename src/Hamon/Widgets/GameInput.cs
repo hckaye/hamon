@@ -3,12 +3,12 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Virtual stick on screen (for touch operation).
-/// <see cref="OnChanged"/>flow to <see cref="AutoCenter"/>time) Return to the center and send 0.
+/// Virtual stick on screen (for touch operation). Direction is delivered via <see cref="OnChanged"/>; when
+/// released, if <see cref="AutoCenter"/> is set it returns to center and sends zero.
 /// </summary>
 public sealed class VirtualJoystick : Widget
 {
-    /// <summary>Normalization direction (-1..1). <see cref="AutoCenter"/>Time is zero.</summary>
+    /// <summary>Normalized direction (-1..1); zero while centered via <see cref="AutoCenter"/>.</summary>
     public Action<Vec2>? OnChanged { get; init; }
 
     public float Size { get; init; } = 120f;
@@ -19,10 +19,10 @@ public sealed class VirtualJoystick : Widget
 
     public Color? Knob { get; init; }
 
-    /// <summary>Base image skin (9-slice/sprite). <see cref="Base"/>Color drawing.</summary>
+    /// <summary>Base image skin (9-slice/sprite); overrides plain <see cref="Base"/> color drawing.</summary>
     public ImageSkin BaseSkin { get; init; }
 
-    /// <summary>Knob image skin. <see cref="Knob"/>Color drawing.</summary>
+    /// <summary>Knob image skin; overrides plain <see cref="Knob"/> color drawing.</summary>
     public ImageSkin KnobSkin { get; init; }
 
     /// <summary>Notification of grabbed/released (true = drag start, false = release) (custom animation/sound effects such as knob enlargement).</summary>
@@ -34,7 +34,7 @@ public sealed class VirtualJoystick : Widget
     public override Element CreateElement() => new VirtualJoystickElement(this);
 }
 
-/// <summary><see cref="VirtualJoystick"/>Holding entity (moves the knob by dragging and outputs the direction).</summary>
+/// <summary>The element backing <see cref="VirtualJoystick"/> (moves the knob by dragging and outputs the direction).</summary>
 internal sealed class VirtualJoystickElement : Element
 {
     private const int NoPointer = int.MinValue;
@@ -56,7 +56,7 @@ internal sealed class VirtualJoystickElement : Element
 
     public override bool WantsPointer => true;
 
-    /// <summary>Current normalization direction (for testing/inspection).</summary>
+    /// <summary>Current normalized direction (for testing/inspection).</summary>
     internal Vec2 Direction
     {
         get
@@ -163,8 +163,8 @@ internal sealed class VirtualJoystickElement : Element
 }
 
 /// <summary>
-/// On-screen cross key (for touch operation). <see cref="OnPressed"/>Hey, if I let go<see cref="OnReleased"/>flow to
-/// Determine whether it is up, down, left, or right based on the relative position from the center.
+/// On-screen D-pad (for touch operation). Delivers <see cref="OnPressed"/> on press and
+/// <see cref="OnReleased"/> on release, determining up/down/left/right from the position relative to center.
 /// </summary>
 public sealed class Dpad : Widget
 {
@@ -181,7 +181,7 @@ public sealed class Dpad : Widget
     /// <summary>Image skin for entire D-pad (9-slice/sprite). </summary>
     public ImageSkin BaseSkin { get; init; }
 
-    /// <summary>Image skin (for highlighting) to be overlaid on the arm that is being pressed.<see cref="BaseSkin"/>Used only when specified.</summary>
+    /// <summary>Highlight image skin overlaid on the arm currently being pressed; used only when <see cref="BaseSkin"/> is specified.</summary>
     public ImageSkin PressedSkin { get; init; }
 
     /// <summary>Center dead zone radius (px - no reaction inside this).</summary>
@@ -190,7 +190,7 @@ public sealed class Dpad : Widget
     public override Element CreateElement() => new DpadElement(this);
 }
 
-/// <summary><see cref="Dpad"/>Holding entity (4-way segment hit detection + press highlight).</summary>
+/// <summary>The element backing <see cref="Dpad"/> (4-way segment hit detection plus press highlight).</summary>
 internal sealed class DpadElement : Element
 {
     private const int NoPointer = int.MinValue;

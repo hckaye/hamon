@@ -2,22 +2,23 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>Handling of overflow (Flutter<c>TextOverflow</c>）。</summary>
+/// <summary>How overflow is handled (equivalent to Flutter's <c>TextOverflow</c>).</summary>
 public enum TextOverflow : byte
 {
     /// <summary>As is (it will stick out unless the parent clips it).</summary>
     Clip,
 
-    /// <summary>Omit the end with "..." to fit within the width.</summary>
+    /// <summary>Truncates the end with "…" to fit within the available width.</summary>
     Ellipsis,
 }
 
 /// <summary>
-/// Widget that draws text (Flutter<c>Text</c>).
-/// Use for measurement/drawing<see cref="ITextRenderer"/>teeth<see cref="BuildContext"/>Supplied via
-/// The margin is<see cref="Padding"/>or<see cref="Column"/>/<see cref="Row"/>Attach using Spacing (same as Flutter).
-/// <see cref="Softwrap"/>Turn around,<see cref="Overflow"/>＝<see cref="TextOverflow.Ellipsis"/>omitted,
-/// <see cref="MaxLines"/>to limit the number of lines (excess lines are omitted/cut). <see cref="HamonTheme.OnSurface"/>。
+/// A widget that draws text (equivalent to Flutter's <c>Text</c>). The <see cref="ITextRenderer"/> used for
+/// measurement/drawing is supplied via <see cref="BuildContext"/>. Margins are added externally, using
+/// <see cref="Padding"/> or the spacing of an enclosing <see cref="Column"/>/<see cref="Row"/> (same as Flutter).
+/// Set <see cref="Softwrap"/> to wrap onto multiple lines; set <see cref="Overflow"/> to
+/// <see cref="TextOverflow.Ellipsis"/> to truncate; use <see cref="MaxLines"/> to limit the number of lines
+/// (excess lines are truncated/cut). Color defaults to theme <see cref="HamonTheme.OnSurface"/> if unspecified.
 /// </summary>
 public sealed class Text : Widget
 {
@@ -27,31 +28,31 @@ public sealed class Text : Widget
 
     public float FontSize { get; init; } = 16f;
 
-    /// <summary>Font name used (<see cref="ITextRenderer"/>Name registered in . </summary>
+    /// <summary>Font name to use (must be a name registered with <see cref="ITextRenderer"/>).</summary>
     public string? Font { get; init; }
 
     /// <summary>Font color (default to theme if unspecified).</summary>
     public Color? Color { get; init; }
 
-    /// <summary>Border color (unspecified = no border). </summary>
+    /// <summary>Outline color (unspecified = no outline).</summary>
     public Color? OutlineColor { get; init; }
 
-    /// <summary>Border thickness (px, default 0 = none).<see cref="OutlineColor"/>Valid when specified.</summary>
+    /// <summary>Outline thickness (px, default 0 = none). Only applied when <see cref="OutlineColor"/> is specified.</summary>
     public float OutlineWidth { get; init; }
 
-    /// <summary>Wrap at width to make multiple lines (default false = 1 line).</summary>
+    /// <summary>Wraps text at the available width onto multiple lines (default false = single line).</summary>
     public bool Softwrap { get; init; }
 
-    /// <summary>Handling when the width does not fit (default<see cref="TextOverflow.Clip"/>）。</summary>
+    /// <summary>How to handle text that doesn't fit the available width (default <see cref="TextOverflow.Clip"/>).</summary>
     public TextOverflow Overflow { get; init; }
 
-    /// <summary>Maximum number of rows (0=unlimited). <see cref="Overflow"/>Omit/cut the last line according to the following.</summary>
+    /// <summary>Maximum number of lines (0 = unlimited). The last line is truncated/cut according to <see cref="Overflow"/>.</summary>
     public int MaxLines { get; init; }
 
     public override Element CreateElement() => new TextElement(this);
 }
 
-/// <summary>A holding entity for text. <see cref="ITextRenderer.Measure"/>Find it with and draw it with Paint.</summary>
+/// <summary>The element that backs <see cref="Text"/>. Measures with <see cref="ITextRenderer.Measure"/> and draws in Paint.</summary>
 internal sealed class TextElement : Element
 {
     private const string Ellipsis = "…";
@@ -116,7 +117,7 @@ internal sealed class TextElement : Element
     }
 
     private ITextRenderer Renderer => Context.Text
-        ?? throw new InvalidOperationException("Text の計測/描画には ITextRenderer が要る（HamonRoot 経由で BuildContext に供給する）。");
+        ?? throw new InvalidOperationException("Text requires an ITextRenderer to measure/paint (supplied to BuildContext via HamonRoot).");
 
     private float Width(string s) => Renderer.Measure(s, ((Text)Widget).FontSize, ((Text)Widget).Font).X;
 
@@ -175,7 +176,7 @@ internal sealed class TextElement : Element
         return _cacheSize;
     }
 
-    /// <summary>width<paramref name="maxW"/>Returns the longest prefix that fits + “…”.</summary>
+    /// <summary>Returns the longest prefix of <paramref name="text"/> that fits within width <paramref name="maxW"/>, followed by "…".</summary>
     private string Ellipsize(string text, float maxW)
     {
         if (Width(Ellipsis) > maxW)

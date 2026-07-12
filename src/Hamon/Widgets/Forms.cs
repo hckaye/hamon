@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>Standard field validation (null = valid, string = error message).<see cref="TextFormField.Validator"/>give it to</summary>
+/// <summary>Standard field validation (null = valid, string = error message). Assign to <see cref="TextFormField.Validator"/>.</summary>
 public static class Validators
 {
     /// <summary>Non-empty (excluding leading and trailing whitespace).</summary>
@@ -45,8 +45,9 @@ public static class Validators
 }
 
 /// <summary>
-/// Form field aggregation and bulk validation (Flutter<c>Form</c>/<c>FormState</c>A fairly lightweight version).<see cref="TextFormField"/>but
-/// register itself on mount,<see cref="Validate"/>Validate all fields and reflect errors to each field.
+/// Form field aggregation and bulk validation (a fairly lightweight version of Flutter's <c>Form</c>/
+/// <c>FormState</c>). Each <see cref="TextFormField"/> registers itself on mount; <see cref="Validate"/>
+/// validates all fields and reflects any errors back onto each field.
 /// </summary>
 public sealed class FormController
 {
@@ -121,9 +122,10 @@ public sealed class FormController
 }
 
 /// <summary>
-/// Text field with validation (Flutter<c>TextFormField</c>equivalent).<see cref="Form"/>to<see cref="Name"/>Registered with
-/// <see cref="FormController.Validate"/>sometimes<see cref="Validator"/>will be verified, and if there are any errors, they will be displayed in red below the input field.
-/// Value retention is provided by the app.<see cref="Controller"/>（<see cref="TextEditingController"/>）。
+/// Text field with validation (equivalent to Flutter's <c>TextFormField</c>). Registers with
+/// <see cref="Form"/> under <see cref="Name"/>. When <see cref="FormController.Validate"/> runs,
+/// <see cref="Validator"/> is invoked, and any error is displayed in red below the input field. Value
+/// retention is provided by the app via <see cref="Controller"/> (a <see cref="TextEditingController"/>).
 /// </summary>
 public sealed class TextFormField : HookWidget
 {

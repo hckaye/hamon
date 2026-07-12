@@ -3,8 +3,8 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Radio button (Flutter<c>Radio&lt;T&gt;</c>）。<see cref="Value"/>but<see cref="GroupValue"/>Select if it matches.
-/// Tap/OK<see cref="OnChanged"/>(<see cref="Value"/>).
+/// A radio button (equivalent to Flutter's <c>Radio&lt;T&gt;</c>). It is selected when <see cref="Value"/> matches
+/// <see cref="GroupValue"/>. Tapping or pressing OK invokes <see cref="OnChanged"/> with <see cref="Value"/>.
 /// </summary>
 public sealed class Radio<T> : Widget
 {
@@ -26,13 +26,13 @@ public sealed class Radio<T> : Widget
 
     public Color? DotColor { get; init; }
 
-    /// <summary>Color of the inside (hole) of the ring. </summary>
+    /// <summary>Color of the ring's interior (the "hole").</summary>
     public Color? FillColor { get; init; }
 
-    /// <summary>Image skin (9-slice/sprite) when selected. </summary>
+    /// <summary>Image skin (9-slice/sprite) when selected.</summary>
     public ImageSkin OnSkin { get; init; }
 
-    /// <summary>Image skin when not selected. </summary>
+    /// <summary>Image skin when not selected.</summary>
     public ImageSkin OffSkin { get; init; }
 
     /// <summary>Notifications for hover/focus/selected transitions (custom animations/sound effects).</summary>
@@ -41,7 +41,7 @@ public sealed class Radio<T> : Widget
     public override Element CreateElement() => new RadioElement<T>(this);
 }
 
-/// <summary><see cref="Radio{T}"/>holding entity (ring + selection dot).</summary>
+/// <summary>The element that backs <see cref="Radio{T}"/> (ring + selection dot).</summary>
 internal sealed class RadioElement<T> : ToggleControlElement
 {
     public RadioElement(Radio<T> widget)
@@ -113,8 +113,8 @@ public sealed class SegmentItem<T>
 }
 
 /// <summary>
-/// Single selection segment switching (Flutter/Cupertino<c>SegmentedControl</c>／Material <c>SegmentedButton</c>equivalent).
-/// Choose one of the horizontal segments. <see cref="Button"/>Build on top.
+/// A single-selection segmented control (equivalent to Flutter/Cupertino's <c>SegmentedControl</c> / Material's
+/// <c>SegmentedButton</c>). Lets you choose one of several horizontal segments. Built on top of <see cref="Button"/>.
 /// </summary>
 public sealed class SegmentedControl<T> : StatelessWidget
 {
@@ -124,10 +124,10 @@ public sealed class SegmentedControl<T> : StatelessWidget
 
     public Action<T>? OnChanged { get; init; }
 
-    /// <summary>The background of the selected segment (the theme is Primary if unspecified).</summary>
+    /// <summary>Background of the selected segment (defaults to theme Primary if unspecified).</summary>
     public Color? SelectedColor { get; init; }
 
-    /// <summary>Outer border/separator color (unspecified to theme Border).</summary>
+    /// <summary>Outer border/separator color (defaults to theme Border if unspecified).</summary>
     public Color? BorderColor { get; init; }
 
     public float Radius { get; init; } = 10f;

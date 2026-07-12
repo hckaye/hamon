@@ -3,8 +3,8 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Fix child aspect ratio (Flutter<c>AspectRatio</c>). <see cref="Ratio"/>satisfy
-/// Decide on a size and fill the child with that size.
+/// Fixes the child's aspect ratio (equivalent to Flutter's <c>AspectRatio</c>). Determines a size satisfying
+/// <see cref="Ratio"/> and fills the child with that size.
 /// </summary>
 public sealed class AspectRatio : Widget, IRenderConfig
 {
@@ -22,8 +22,8 @@ public sealed class AspectRatio : Widget, IRenderConfig
 }
 
 /// <summary>
-/// Folded flow (Flutter<c>Wrap</c>).
-/// Used to insert a variable number of small elements, such as a list of tags/chips and a group of skill icons.
+/// A wrapping flow layout (equivalent to Flutter's <c>Wrap</c>).
+/// Used to lay out a variable number of small elements, such as a list of tags/chips or a group of skill icons.
 /// </summary>
 public sealed class Wrap : Widget, IRenderConfig
 {
@@ -54,9 +54,9 @@ public sealed class Wrap : Widget, IRenderConfig
 }
 
 /// <summary>
-/// Positioning children to avoid notch/status bar/home indicator and soft keyboard (Flutter<c>SafeArea</c>）。
-/// <see cref="HamonRoot.SafeAreaInsets"/>Give the child (+ bottom edge is the height of the soft keyboard) as the inner margin.
-/// <see cref="Minimum"/>guarantees minimum margins.
+/// Positions its child to avoid the notch, status bar, home indicator, and soft keyboard (equivalent to Flutter's
+/// <c>SafeArea</c>). Passes <see cref="HamonRoot.SafeAreaInsets"/> to the child as inner margins (with the bottom
+/// edge also accounting for the soft keyboard's height). <see cref="Minimum"/> guarantees a minimum margin on each side.
 /// </summary>
 public sealed class SafeArea : StatelessWidget
 {

@@ -3,9 +3,11 @@ using System;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Opaque identifier for sound effect (value type = no box). <c>enum→int</c>etc., and map the id to the actual sound.
-/// （<see cref="ISoundPlayer"/>）。<b>"Do not ring"<see cref="Nullable{T}"/>（<c>SoundId?</c>represented by null)</b>
-/// (0 is not treated specially = 0 is also a regular id).<c>int</c>It can be implicitly converted from<c>(int)Sfx.Click</c>can be handed over as is.
+/// An opaque identifier for a sound effect (a value type = no boxing), e.g. cast from an <c>enum</c> to
+/// <c>int</c>; the id is then mapped to the actual sound elsewhere (<see cref="ISoundPlayer"/>).
+/// <b>"Do not play" is represented via <see cref="Nullable{T}"/> (<c>SoundId?</c> = null)</b> — 0 is not treated
+/// specially (0 is a regular id too). Implicitly convertible from <c>int</c>, so you can pass <c>(int)Sfx.Click</c>
+/// directly.
 /// </summary>
 public readonly struct SoundId : IEquatable<SoundId>
 {
@@ -29,9 +31,10 @@ public readonly struct SoundId : IEquatable<SoundId>
 }
 
 /// <summary>
-/// Sound effect playback abstraction (bridge to game audio). <b>have no specific sound</b>= As a drawing engine independent UI library,
-/// Provide only the trigger (hover/press, etc.) for "when to ring."<paramref name="sound"/>teeth<see cref="SoundId"/>(value type = no box),
-/// User side maps to actual sound (e.g.<c>id→SoundEffect</c>table).<see cref="HamonRoot.Sound"/>Inject into.
+/// Sound-effect playback abstraction (a bridge to game audio). <b>Has no knowledge of specific sounds</b> — as a
+/// rendering-engine-independent UI library, Hamon only provides the trigger for "when to play" (hover, press,
+/// etc.). <paramref name="sound"/> is a <see cref="SoundId"/> (value type = no boxing); the user side maps it to
+/// the actual sound (e.g. an id-to-SoundEffect table). Inject an implementation via <see cref="HamonRoot.Sound"/>.
 /// </summary>
 public interface ISoundPlayer
 {
@@ -39,8 +42,9 @@ public interface ISoundPlayer
 }
 
 /// <summary>
-/// Sound effects associated with widget interactions (declarative). <see cref="SoundId"/>(value type),<see cref="HamonRoot.Sound"/>via
-/// will be played.<b>Parts that do not sound are null</b>（<c>SoundId?</c>).<c>Nullable</c>Since is a value type, no box is generated.
+/// Sound effects associated with widget interactions (declarative). Uses <see cref="SoundId"/> (value type) and is
+/// played via <see cref="HamonRoot.Sound"/>. <b>Interactions that should not play a sound are left null</b>
+/// (<c>SoundId?</c>) — since <c>Nullable&lt;T&gt;</c> is a value type, no boxing occurs.
 /// </summary>
 public readonly struct InteractionSounds
 {

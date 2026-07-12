@@ -49,7 +49,7 @@ public static class PngCodec
         {
             if (png[i] != Signature[i])
             {
-                throw new InvalidDataException("PNG シグネチャ不正");
+                throw new InvalidDataException("Invalid PNG signature");
             }
         }
 
@@ -69,7 +69,7 @@ public static class PngCodec
                     height = BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(dataStart + 4, 4));
                     if (png[dataStart + 8] != 8 || png[dataStart + 9] != 6)
                     {
-                        throw new NotSupportedException("対応は 8bit RGBA(color type 6) のみ");
+                        throw new NotSupportedException("Only 8-bit RGBA (color type 6) is supported");
                     }
 
                     break;

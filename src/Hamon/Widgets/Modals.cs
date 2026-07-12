@@ -3,14 +3,18 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Transition animation base (<see cref="HamonRoot.PushOverlay(Func{Func{float}, Widget}, float, Curve?)"/>) on top of
-/// Standard modal (Flutter<c>showDialog</c>/<c>showModalBottomSheet</c>equivalent). <see cref="FocusScope"/>With,
-/// Entry/exit animation is for each part (scrim = fade/dialog = fade + enlargement/sheet = slide from the bottom).
-/// The content builder<c>close</c>It receives actions and can be closed by itself.<c>barrierDismissible</c>Close the scrim tap with .
+/// Standard modal helpers (the equivalent of Flutter's <c>showDialog</c> and
+/// <c>showModalBottomSheet</c>), built on top of the transition-animation
+/// infrastructure in <see cref="HamonRoot.PushOverlay(Func{Func{float}, Widget}, float, Curve?)"/>.
+/// Works together with <see cref="FocusScope"/>. Each modal type has its own
+/// enter/exit animation (scrim = fade, dialog = fade + scale up, sheet = slide in
+/// from the bottom). The content builder receives a <c>close</c> action so it can
+/// dismiss itself, and setting <c>barrierDismissible</c> also closes the modal when
+/// the scrim is tapped.
 /// </summary>
 public static class Modals
 {
-    /// <summary>Open a central modal dialog. <see cref="OverlayEntry"/>Close with (or the passed close).</summary>
+    /// <summary>Opens a centered modal dialog. Close it via the returned <see cref="OverlayEntry"/>, or via the close action passed to the content builder.</summary>
     public static OverlayEntry ShowDialog(
         this HamonRoot root,
         Func<Action, Widget> content,
@@ -34,7 +38,7 @@ public static class Modals
         return entry;
     }
 
-    /// <summary>Open the bottom sheet that looms up from below.<paramref name="height"/>is the principal axis (vertical) px.</summary>
+    /// <summary>Opens a bottom sheet that slides up from below. <paramref name="height"/> is the sheet's height in pixels along the vertical axis.</summary>
     public static OverlayEntry ShowBottomSheet(
         this HamonRoot root,
         Func<Action, Widget> content,
@@ -59,7 +63,7 @@ public static class Modals
         return entry;
     }
 
-    /// <summary>A drawer that slides in from the end (navigation drawer).<paramref name="fromRight"/>from the right end.</summary>
+    /// <summary>Opens a navigation drawer that slides in from the side. Set <paramref name="fromRight"/> to true to slide in from the right edge instead of the left.</summary>
     public static OverlayEntry ShowDrawer(
         this HamonRoot root,
         Func<Action, Widget> content,

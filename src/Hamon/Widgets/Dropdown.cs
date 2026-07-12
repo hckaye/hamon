@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>Dropdown items (values ​​and labels).</summary>
+/// <summary>A dropdown item (value and label).</summary>
 public sealed class DropdownItem<T>
 {
     public DropdownItem(T value, Widget label)
@@ -17,8 +17,8 @@ public sealed class DropdownItem<T>
 }
 
 /// <summary>
-/// Single selection dropdown (Flutter<c>DropdownButton&lt;T&gt;</c>).
-/// Open the menu (overlay) below. <see cref="OnChanged"/>+Close.
+/// A single-selection dropdown (equivalent to Flutter's <c>DropdownButton&lt;T&gt;</c>). Tapping the trigger
+/// opens a menu (overlay) below it; selecting an item invokes <see cref="OnChanged"/> and closes the menu.
 /// </summary>
 public sealed class Dropdown<T> : Widget
 {
@@ -28,7 +28,7 @@ public sealed class Dropdown<T> : Widget
 
     public Action<T>? OnChanged { get; init; }
 
-    /// <summary>Display when no selection is made (if there is no value in the item).</summary>
+    /// <summary>Widget shown when nothing is selected (i.e. <see cref="Value"/> doesn't match any item).</summary>
     public Widget? Placeholder { get; init; }
 
     public Color? Background { get; init; }
@@ -40,7 +40,7 @@ public sealed class Dropdown<T> : Widget
     public override Element CreateElement() => new DropdownElement<T>(this);
 }
 
-/// <summary><see cref="Dropdown{T}"/>holding entity. </summary>
+/// <summary>The element that holds a <see cref="Dropdown{T}"/>.</summary>
 internal sealed class DropdownElement<T> : Element
 {
     private readonly LayoutNode _node = new(new Style { Kind = LayoutKind.Box }, null);
@@ -59,7 +59,7 @@ internal sealed class DropdownElement<T> : Element
 
     public override IReadOnlyList<Element> Children => _childArray;
 
-    /// <summary>Is the menu open (for inspection/testing)?</summary>
+    /// <summary>Whether the menu is currently open (for inspection/testing).</summary>
     internal bool IsOpen => _entry is not null;
 
     public override void Mount(Element? parent, BuildContext context)

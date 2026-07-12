@@ -9,9 +9,11 @@ using XnaVec2 = Microsoft.Xna.Framework.Vector2;
 namespace Hamon.MonoGame;
 
 /// <summary>
-/// <see cref="IPainter"/>MonoGame implementation of. <see cref="SpriteBatch"/>Do it with
-/// Generate and maintain a white 1px and circle texture for rounded corners.<see cref="Batch"/>/<see cref="Device"/>teeth<see cref="Hamon.Widgets.SceneView"/>
-/// (The rendering destination batch shares the same instance as the text layer FontStashTextRenderer.)
+/// <see cref="IPainter"/> implementation for MonoGame, built on top of <see cref="SpriteBatch"/>.
+/// Generates and maintains a white 1px texture and a circle texture used for rounded corners.
+/// <see cref="Batch"/> and <see cref="Device"/> are exposed for <see cref="Hamon.Widgets.SceneView"/>
+/// (the destination batch is the same <see cref="SpriteBatch"/> instance shared with the text layer,
+/// <c>FontStashTextRenderer</c>).
 /// </summary>
 public sealed class MonoGamePainter : IPainter, IDisposable
 {
@@ -394,8 +396,9 @@ public sealed class MonoGamePainter : IPainter, IDisposable
     }
 
     /// <summary>
-    /// for soft shadows<b>Rounded corners</b>Blob texture (white + alpha).
-    /// Soften the edges. <see cref="ShadowSrcBorder"/>) includes roundness + feathers, so when laid, it creates a round shadow.
+    /// A <b>rounded-corner</b> blob texture (white + alpha) with soft, feathered edges, used for soft
+    /// shadows. The border region (<see cref="ShadowSrcBorder"/>) encodes both the roundness and the
+    /// feather, so tiling it as a 9-slice produces a rounded shadow.
     /// </summary>
     private static Texture2D CreateShadowTexture(GraphicsDevice device)
     {

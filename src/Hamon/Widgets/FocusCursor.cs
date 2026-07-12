@@ -3,10 +3,11 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Appearance and behavior settings for the focus cursor (single overlay).<see cref="HamonRoot.Cursor"/>Consists of.
-/// <see cref="Enabled"/>, instead of each widget's immediate frame,<b>One cursor slides from the previous frame to the next</b>
-/// （<see cref="GlideDuration"/>/<see cref="Curve"/>), drawn in the foreground. <see cref="PulseAmplitude"/>）。
-/// To make the focus expression of gamepad/direction movement first class.
+/// Appearance and behavior settings for the focus cursor (a single overlay), exposed via
+/// <see cref="HamonRoot.Cursor"/>. When <see cref="Enabled"/>, instead of each widget drawing its own frame,
+/// <b>a single cursor glides from the previous frame to the next</b> (see <see cref="GlideDuration"/>/
+/// <see cref="Curve"/>) and is drawn in the foreground, optionally pulsing (see <see cref="PulseAmplitude"/>).
+/// This makes the focus experience for gamepad/directional movement a first-class feature.
 /// </summary>
 public sealed class FocusCursor
 {
@@ -32,7 +33,7 @@ public sealed class FocusCursor
     /// <summary>Blinking period (seconds).</summary>
     public float PulsePeriod { get; set; } = 1f;
 
-    /// <summary>Background color to be placed inside the frame (null = no fill = frame line only). </summary>
+    /// <summary>Background color to be placed inside the frame (null = no fill, outline only).</summary>
     public Color? Background { get; set; }
 
     /// <summary>Background/frame corner radius (px).</summary>
@@ -49,8 +50,9 @@ public sealed class FocusCursor
 }
 
 /// <summary>
-/// <see cref="Focus"/>Individual focus appearance (global<see cref="FocusCursor"/>(for widgets that do not use ).
-/// In addition to the border, you can also specify the background and rounded corners.
+/// Per-widget focus appearance for <see cref="Focus"/>, for widgets that do not use the global
+/// <see cref="FocusCursor"/>. In addition to the border, you can also specify the background and rounded
+/// corners.
 /// </summary>
 public readonly struct FocusDecoration
 {

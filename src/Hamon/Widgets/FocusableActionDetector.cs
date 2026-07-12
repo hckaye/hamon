@@ -3,62 +3,65 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// A general-purpose primitive that collectively handles focus, hover, press, and gamepad operations (Flutter<c>FocusableActionDetector</c>）。
-/// A base for building your own interactive widgets (buttons/slots/toggles, etc.)<see cref="Button"/>is also implemented on top of this.
+/// A general-purpose primitive that handles focus, hover, press, and gamepad operations together (equivalent
+/// to Flutter's <c>FocusableActionDetector</c>). A base for building custom interactive widgets
+/// (buttons/slots/toggles, etc.); <see cref="Button"/> is also implemented on top of this.
 /// <para>
-/// situation(<see cref="WidgetState"/>) is the change in<see cref="OnShowFocusHighlight"/>/<see cref="OnShowHoverHighlight"/>/
-/// <see cref="OnFocusChange"/>to notify you with<see cref="Builder"/>(Hamon extension), you can reassemble the children according to the state.
+/// State changes (<see cref="WidgetState"/>) are reported via <see cref="OnShowFocusHighlight"/>/
+/// <see cref="OnShowHoverHighlight"/>/<see cref="OnFocusChange"/>. With <see cref="Builder"/> (a Hamon
+/// extension), you can reassemble the children according to state.
 /// </para>
 /// <para>
-/// <b>Hamon expansion</b>: In addition to Flutter's Shortcuts/Actions, OK/Cancel of the gamepad<see cref="OnActivate"/>/
-/// <see cref="OnDismiss"/>(direction movement is<see cref="HamonRoot"/>).
+/// <b>Hamon extension</b>: in addition to Flutter's Shortcuts/Actions, gamepad OK/Cancel is exposed via
+/// <see cref="OnActivate"/>/<see cref="OnDismiss"/> (directional movement is handled by <see cref="HamonRoot"/>).
 /// </para>
 /// </summary>
 public sealed class FocusableActionDetector : Widget
 {
-    /// <summary>A fixed child that does not depend on the state (<see cref="Builder"/>).</summary>
+    /// <summary>A fixed child that does not depend on state (ignored if <see cref="Builder"/> is set).</summary>
     public Widget? Child { get; init; }
 
     /// <summary>
-    /// A builder that creates children according to the state (Hamon extension = escape hatch added to Flutter's callback method).
-    /// When specified, the child is re-created with this builder every time the state changes (you can freely configure the appearance of press/hover/focus/disabled).
+    /// A builder that creates children according to state (a Hamon extension — an escape hatch added on top of
+    /// Flutter's callback-based approach). When specified, the child is re-created with this builder every time
+    /// the state changes, so you can freely configure the appearance for press/hover/focus/disabled states.
     /// </summary>
     public Func<WidgetState, Widget>? Builder { get; init; }
 
-    /// <summary>Is it possible to operate (false = do not receive input, do not register focus =<see cref="WidgetState.Disabled"/>）。</summary>
+    /// <summary>Whether the widget can be operated (false = does not receive input and does not register focus = <see cref="WidgetState.Disabled"/>).</summary>
     public bool Enabled { get; init; } = true;
 
     /// <summary>Focus target (kept by caller = does not lose state on rebuild).</summary>
     public FocusNode Node { get; init; } = new();
 
-    /// <summary>If there is no other focus when mounting, I will take it.</summary>
+    /// <summary>If nothing else has focus when this widget is mounted, it takes focus.</summary>
     public bool Autofocus { get; init; }
 
-    /// <summary>of descendants<see cref="FocusNode"/>whether to make it focusable (false disables internal focus).</summary>
+    /// <summary>Whether descendant <see cref="FocusNode"/> instances can be focusable (false disables internal focus).</summary>
     public bool DescendantsAreFocusable { get; init; } = true;
 
     /// <summary>Whether descendants are subject to directional traversal (false, the interior is not subject to tabbing).</summary>
     public bool DescendantsAreTraversable { get; init; } = true;
 
-    /// <summary>Physical button → Intent name assignment (Flutter<c>shortcuts</c>). <see cref="Actions"/>subtract.</summary>
+    /// <summary>Physical button to intent-name mapping (equivalent to Flutter's <c>shortcuts</c>), resolved via <see cref="Actions"/>.</summary>
     public IReadOnlyDictionary<GamepadButton, string>? Shortcuts { get; init; }
 
-    /// <summary>Intent name → Handler (Flutter<c>actions</c>）。<see cref="Shortcuts"/>Resolved to.</summary>
+    /// <summary>Intent name to handler mapping (equivalent to Flutter's <c>actions</c>), resolved from <see cref="Shortcuts"/>.</summary>
     public IReadOnlyDictionary<string, Action>? Actions { get; init; }
 
-    /// <summary>When focus highlight display status changes (Flutter<c>onShowFocusHighlight</c>）。</summary>
+    /// <summary>Called when the focus highlight visibility changes (equivalent to Flutter's <c>onShowFocusHighlight</c>).</summary>
     public Action<bool>? OnShowFocusHighlight { get; init; }
 
-    /// <summary>When the ability to display hover highlights changes (Flutter<c>onShowHoverHighlight</c>）。</summary>
+    /// <summary>Called when the hover highlight visibility changes (equivalent to Flutter's <c>onShowHoverHighlight</c>).</summary>
     public Action<bool>? OnShowHoverHighlight { get; init; }
 
-    /// <summary>When focus changes (Flutter<c>onFocusChange</c>）。</summary>
+    /// <summary>Called when focus changes (equivalent to Flutter's <c>onFocusChange</c>).</summary>
     public Action<bool>? OnFocusChange { get; init; }
 
-    /// <summary>Fire with OK (Gamepad A / Enter / Tap). </summary>
+    /// <summary>Fires on OK (gamepad A / Enter / tap).</summary>
     public Action? OnActivate { get; init; }
 
-    /// <summary>Cancel (gamepad B/Esc) fires. </summary>
+    /// <summary>Fires on Cancel (gamepad B / Esc).</summary>
     public Action? OnDismiss { get; init; }
 
     /// <summary>Cursor to present while hovering.</summary>
@@ -77,9 +80,9 @@ public sealed class FocusableActionDetector : Widget
 }
 
 /// <summary>
-/// <see cref="FocusableActionDetector"/>holding entity.
-/// Combine gamepad shipping<see cref="WidgetState"/>Consolidate to.
-/// （<see cref="FocusableActionDetector.Builder"/>(When specified) Reassembles the children.
+/// The element backing <see cref="FocusableActionDetector"/>. Combines gamepad delivery and consolidates
+/// state into <see cref="WidgetState"/>, reassembling children when
+/// <see cref="FocusableActionDetector.Builder"/> is specified.
 /// </summary>
 internal sealed class FocusableActionDetectorElement : Element, IHoverTarget
 {

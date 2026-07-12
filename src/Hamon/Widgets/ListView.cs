@@ -3,22 +3,24 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Virtualization list (Flutter<c>ListView.builder</c>equivalent).<see cref="ItemCount"/>Of the cases
-/// <b>visible range only</b>of<see cref="Builder"/>to materialize it and recreate it according to the scroll (lightweight even with a huge number of items).
-/// <see cref="ItemExtent"/>When specified, O (visible) high-speed route (fixed height). <see cref="EstimatedExtent"/>of
-/// Temporarily store and store actual measured values ​​in extent cache (variable height).<see cref="OnEndReached"/>Infinite scroll.
+/// A virtualizing list (equivalent to Flutter's <c>ListView.builder</c>). Of the <see cref="ItemCount"/> items, only
+/// the cells in the <b>visible range</b> are materialized via <see cref="Builder"/>, and are recreated as scrolling
+/// proceeds (lightweight even with a huge number of items). When <see cref="ItemExtent"/> is specified, a fast
+/// O(visible) path is used (fixed height). Otherwise, <see cref="EstimatedExtent"/> is used as a placeholder for
+/// unmeasured cells, and actual measured values are cached as cells come into view (variable height).
+/// <see cref="OnEndReached"/> supports infinite scroll.
 /// </summary>
 public sealed class ListView : Widget
 {
     public int ItemCount { get; init; }
 
-    /// <summary>index → ​​Cell Widget. </summary>
+    /// <summary>Maps an index to a cell widget.</summary>
     public Func<int, Widget> Builder { get; init; } = static _ => new SizedBox();
 
-    /// <summary>Scroll direction (default<see cref="Axis.Vertical"/>）。</summary>
+    /// <summary>Scroll direction (default <see cref="Axis.Vertical"/>).</summary>
     public Axis Axis { get; init; } = Axis.Vertical;
 
-    /// <summary>Fixed cell length (principal axis px). </summary>
+    /// <summary>A fixed cell length along the main axis (px).</summary>
     public float? ItemExtent { get; init; }
 
     /// <summary>Estimated cell length when variable height (temporary placement of unmeasured cells).</summary>
@@ -26,34 +28,35 @@ public sealed class ListView : Widget
 
     public ScrollController? Controller { get; init; }
 
-    /// <summary>Overscroll at the edge (rubber band + return). </summary>
+    /// <summary>Overscroll at the edges (rubber-band effect with return).</summary>
     public bool Bounce { get; init; } = true;
 
     /// <summary>
-    /// Whether to enable manual scrolling (drag/wheel). <b>Disable user interaction scrolling</b>do
-    /// （<see cref="Controller"/>・Scroll-to-focus etc.<b>Program control still possible</b>）。Flutter <c>NeverScrollableScrollPhysics</c>Quite a bit.
+    /// Whether manual scrolling (drag/wheel) is enabled. Setting this to false disables user-interaction scrolling,
+    /// but programmatic control (via <see cref="Controller"/>, scroll-to-focus, etc.) remains possible. Equivalent
+    /// to Flutter's <c>NeverScrollableScrollPhysics</c>.
     /// </summary>
     public bool ManualScroll { get; init; } = true;
 
-    /// <summary>Scroll movement constants (sensitivity/following/rubber band/inertia). <see cref="HamonTheme.ScrollPhysics"/>。</summary>
+    /// <summary>Scroll movement constants (sensitivity/following/rubber-band/inertia). See <see cref="HamonTheme.ScrollPhysics"/>.</summary>
     public ScrollPhysics? Physics { get; init; }
 
     public Dimension Width { get; init; }
 
     public Dimension Height { get; init; }
 
-    /// <summary>Fires only once when visibility reaches near the end (infinite scroll = increase itemCount).</summary>
+    /// <summary>Fires once when visibility reaches near the end of the list (for infinite scroll, e.g. to increase ItemCount).</summary>
     public Action? OnEndReached { get; init; }
 
-    /// <summary>How many items before the end?<see cref="OnEndReached"/>whether to fire in advance (prefetch; default 0 = when the last item is visible).</summary>
+    /// <summary>How many items before the end <see cref="OnEndReached"/> should fire in advance (prefetch; default 0 means it fires when the last item becomes visible).</summary>
     public int EndReachedThreshold { get; init; }
 
     public override Element CreateElement() => new ListViewElement(this);
 }
 
 /// <summary>
-/// <see cref="ListView"/>holding entity.
-/// The scroll amount is maintained, updated by drag/controller, and the drawing is a rectangular clip.
+/// The holding entity for <see cref="ListView"/>.
+/// Maintains the scroll offset, updated via drag or controller, and draws with a rectangular clip.
 /// </summary>
 internal sealed class ListViewElement : Element, IVirtualLayout, IScrollable
 {
@@ -84,17 +87,17 @@ internal sealed class ListViewElement : Element, IVirtualLayout, IScrollable
 
     public float ScrollOffset { get; private set; }
 
-    /// <summary>Overscroll displacement (amount of rubber band over the edge. For inspection/testing purposes).</summary>
+    /// <summary>The overscroll displacement (the amount of rubber-band travel past the edge; for inspection/testing purposes).</summary>
     internal float Overscroll => _drag.Overscroll;
 
     Axis IScrollable.ScrollAxis => ((ListView)Widget).Axis;
 
     ScrollPhysics IScrollable.Physics => ((ListView)Widget).Physics ?? Context.Theme.ScrollPhysics;
 
-    /// <summary>Currently materialized index set (for inspection/testing).</summary>
+    /// <summary>The set of currently materialized indices (for inspection/testing).</summary>
     internal IReadOnlyCollection<int> ActiveIndices => _active.Keys;
 
-    /// <summary>The entity of the specified index (or null if it does not exist. For inspection/testing).</summary>
+    /// <summary>The element for the specified index, or null if it does not exist (for inspection/testing).</summary>
     internal Element? ActiveElement(int index) => _active.TryGetValue(index, out Element? e) ? e : null;
 
     void IScrollable.SetScroll(float offset) => SetScroll(offset);
@@ -191,7 +194,7 @@ internal sealed class ListViewElement : Element, IVirtualLayout, IScrollable
         context.PopClip(previous);
     }
 
-    /// <summary>Virtualization measurement: Build and measure only cells in the visible range, set children and offset, and return viewport size.</summary>
+    /// <summary>Virtualized measurement: builds and measures only the cells in the visible range, sets children and offsets, and returns the viewport size.</summary>
     public Size Measure(LayoutNode node, BoxConstraints constraints)
     {
         var widget = (ListView)Widget;
@@ -242,8 +245,8 @@ internal sealed class ListViewElement : Element, IVirtualLayout, IScrollable
     // --- 仮想化ヘルパ ---
 
     /// <summary>
-    /// Materialize the visible range.<b>Rows with Key reuse the same element across indexes</b>(Keeps in-line state even when deleted/sorted =
-    /// keyed virtualization).
+    /// Materializes the visible range. <b>Rows with a Key reuse the same element across index changes</b>
+    /// (preserving in-row state even when items are deleted or reordered — keyed virtualization).
     /// </summary>
     private void RealizeRange(ListView widget, int first, int last, bool vertical, float vpCross, float scroll)
     {

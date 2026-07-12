@@ -3,9 +3,9 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Determined progress bar (Flutter<c>LinearProgressIndicator</c>equivalent).<see cref="Value"/>(0..1) or
-/// <see cref="ValueGetter"/>(Reading when drawing =<c>Bind</c>/Anime Bondage) to reflect progress. <see cref="Transform"/>of
-/// Shrink by X scale = independent of layout width.
+/// A determinate progress bar (equivalent to Flutter's <c>LinearProgressIndicator</c>). Progress is reflected
+/// via <see cref="Value"/> (0..1) or <see cref="ValueGetter"/> (read at draw time, for binding/animation).
+/// The fill is drawn by scaling its width along the X axis, independent of the bar's overall <see cref="Width"/>.
 /// </summary>
 public sealed class ProgressBar : Widget
 {
@@ -13,16 +13,16 @@ public sealed class ProgressBar : Widget
 
     public Func<float>? ValueGetter { get; init; }
 
-    /// <summary>Track color (unspecified and theme<see cref="HamonTheme.SurfaceVariant"/>）。</summary>
+    /// <summary>Track color (defaults to the theme's <see cref="HamonTheme.SurfaceVariant"/> if unspecified).</summary>
     public Color? Track { get; init; }
 
-    /// <summary>fill color (unspecified and theme<see cref="HamonTheme.Primary"/>）。</summary>
+    /// <summary>Fill color (defaults to the theme's <see cref="HamonTheme.Primary"/> if unspecified).</summary>
     public Color? Fill { get; init; }
 
-    /// <summary>Image skin (9-slice/sprite) for the rail (entire track). </summary>
+    /// <summary>Image skin (9-slice/sprite) for the rail (the entire track).</summary>
     public ImageSkin TrackSkin { get; init; }
 
-    /// <summary>Image skin for progress (from left to value). </summary>
+    /// <summary>Image skin for the fill (drawn from the left up to the current value).</summary>
     public ImageSkin FillSkin { get; init; }
 
     public float Height { get; init; } = 8f;
@@ -32,7 +32,7 @@ public sealed class ProgressBar : Widget
     public override Element CreateElement() => new ProgressBarElement(this);
 }
 
-/// <summary><see cref="ProgressBar"/>holding entity. <see cref="ProgressBar.ValueGetter"/>/<see cref="ProgressBar.Value"/>Read and draw rails + progress (skin priority, color if there is none).</summary>
+/// <summary>The element that holds a <see cref="ProgressBar"/>. Reads <see cref="ProgressBar.ValueGetter"/>/<see cref="ProgressBar.Value"/> and draws the track plus fill (using the skin if specified, otherwise falling back to color).</summary>
 internal sealed class ProgressBarElement : Element
 {
     private readonly LayoutNode _node;
@@ -87,7 +87,7 @@ internal sealed class ProgressBarElement : Element
     }
 }
 
-/// <summary>Common base for focusable toggle controls (registration, toggle with tap/OK, hover tracking, focus frame<see cref="Focus"/>system).</summary>
+/// <summary>Common base for focusable toggle controls: handles registration with the <see cref="Focus"/> system, toggling via tap/OK, and hover tracking.</summary>
 public abstract class ToggleControlElement : Element, IHoverTarget
 {
     private bool _hovered;
@@ -102,13 +102,13 @@ public abstract class ToggleControlElement : Element, IHoverTarget
 
     protected LayoutNode Node { get; }
 
-    /// <summary>Is the mouse hovering (used by derivatives to draw state layers)?</summary>
+    /// <summary>Whether the mouse is hovering (used by derived classes to draw state layers).</summary>
     protected bool Hovered => _hovered;
 
-    /// <summary>Is it selected (on)? <see cref="WidgetState.Selected"/>reflected in.</summary>
+    /// <summary>Whether the control is selected (on). Reflected in <see cref="WidgetState.Selected"/>.</summary>
     protected virtual bool IsSelected => false;
 
-    /// <summary>State transition (hover/focus/selected) notification destination (derived widget<c>OnStateChanged</c>). </summary>
+    /// <summary>Destination for state transition (hover/focus/selected) notifications (the derived widget's <c>OnStateChanged</c>).</summary>
     protected virtual Action<WidgetState>? StateChangedCallback => null;
 
     public override LayoutNode LayoutNode => Node;
@@ -161,7 +161,7 @@ public abstract class ToggleControlElement : Element, IHoverTarget
         base.Unmount();
     }
 
-    /// <summary>Overlay a thin state layer on the rectangle while hovering (common drawing called at the end of derived Paint).</summary>
+    /// <summary>Overlays a thin state layer on the rectangle while hovering (shared drawing logic called at the end of a derived class's Paint).</summary>
     protected void PaintHoverLayer(in PaintContext context, Rect bounds, float radius)
     {
         if (_hovered)
@@ -218,7 +218,7 @@ public abstract class ToggleControlElement : Element, IHoverTarget
 
     protected abstract bool Autofocus { get; }
 
-    /// <summary>Accessibility labels (for derived widgets)<c>SemanticLabel</c>）。</summary>
+    /// <summary>Accessibility label for derived widgets (their <c>SemanticLabel</c>).</summary>
     protected virtual string? SemanticLabel => null;
 
     protected abstract void OnActivate();
@@ -230,7 +230,7 @@ public abstract class ToggleControlElement : Element, IHoverTarget
     }
 }
 
-/// <summary>Checkbox (Flutter<c>Checkbox</c>). <see cref="OnChanged"/>(!Value). </summary>
+/// <summary>A checkbox (equivalent to Flutter's <c>Checkbox</c>). Activating it invokes <see cref="OnChanged"/> with the negated <see cref="Value"/>.</summary>
 public sealed class Checkbox : Widget
 {
     public bool Value { get; init; }
@@ -249,19 +249,19 @@ public sealed class Checkbox : Widget
 
     public Color? CheckColor { get; init; }
 
-    /// <summary>Image skin (9-slice/sprite) when checked. </summary>
+    /// <summary>Image skin (9-slice/sprite) shown when checked.</summary>
     public ImageSkin OnSkin { get; init; }
 
-    /// <summary>Image skin when unchecked. </summary>
+    /// <summary>Image skin shown when unchecked.</summary>
     public ImageSkin OffSkin { get; init; }
 
-    /// <summary>Notifications for hover/focus/selected transitions (custom animations/sound effects).</summary>
+    /// <summary>Notification of hover/focus/selected transitions (for custom animations/sound effects).</summary>
     public Action<WidgetState>? OnStateChanged { get; init; }
 
     public override Element CreateElement() => new CheckboxElement(this);
 }
 
-/// <summary><see cref="Checkbox"/>holding entity.</summary>
+/// <summary>The element that holds a <see cref="Checkbox"/>.</summary>
 internal sealed class CheckboxElement : ToggleControlElement
 {
     public CheckboxElement(Checkbox widget)
@@ -307,7 +307,7 @@ internal sealed class CheckboxElement : ToggleControlElement
     }
 }
 
-/// <summary>On/off switch (Flutter<c>Switch</c>). <see cref="AnimationController"/>Slide with.</summary>
+/// <summary>An on/off switch (equivalent to Flutter's <c>Switch</c>). The knob slides using an <see cref="AnimationController"/>.</summary>
 public sealed class Switch : Widget
 {
     public bool Value { get; init; }
@@ -326,19 +326,19 @@ public sealed class Switch : Widget
 
     public Color? Knob { get; init; }
 
-    /// <summary>Image skin (9-slice/sprite) for the track (base). </summary>
+    /// <summary>Image skin (9-slice/sprite) for the track (base).</summary>
     public ImageSkin TrackSkin { get; init; }
 
-    /// <summary>Knob image skin. </summary>
+    /// <summary>Image skin for the knob.</summary>
     public ImageSkin KnobSkin { get; init; }
 
-    /// <summary>Notifications for hover/focus/selected transitions (custom animations/sound effects).</summary>
+    /// <summary>Notification of hover/focus/selected transitions (for custom animations/sound effects).</summary>
     public Action<WidgetState>? OnStateChanged { get; init; }
 
     public override Element CreateElement() => new SwitchElement(this);
 }
 
-/// <summary><see cref="Switch"/>holding entity. </summary>
+/// <summary>The element that holds a <see cref="Switch"/>.</summary>
 internal sealed class SwitchElement : ToggleControlElement
 {
     private const float TrackWidth = 48f;
@@ -432,8 +432,8 @@ internal sealed class SwitchElement : ToggleControlElement
 }
 
 /// <summary>
-/// Continuous value slider of 0..1 (Flutter<c>Slider</c>).
-/// Gamepad D-pad left and right (<c>DispatchButtonDown</c>(when shipping directly)<see cref="Step"/>Unit adjustment.
+/// A continuous value slider over 0..1 (equivalent to Flutter's <c>Slider</c>).
+/// Gamepad D-pad left/right (dispatched via <c>DispatchButtonDown</c>) adjusts the value in <see cref="Step"/> increments.
 /// </summary>
 public sealed class Slider : Widget
 {
@@ -457,22 +457,22 @@ public sealed class Slider : Widget
 
     public Color? Thumb { get; init; }
 
-    /// <summary>Image skin (9-slice/sprite) for the rail (entire track). </summary>
+    /// <summary>Image skin (9-slice/sprite) for the rail (the entire track).</summary>
     public ImageSkin TrackSkin { get; init; }
 
-    /// <summary>Image skin for progress (from left to value). </summary>
+    /// <summary>Image skin for the fill (drawn from the left up to the current value).</summary>
     public ImageSkin FillSkin { get; init; }
 
-    /// <summary>Thumb image skin. </summary>
+    /// <summary>Image skin for the thumb.</summary>
     public ImageSkin ThumbSkin { get; init; }
 
-    /// <summary>Notifications of hover/focus/pressed (while dragging) transitions (custom animations/sound effects such as zooming in when grabbing the thumb).</summary>
+    /// <summary>Notification of hover/focus/pressed (while dragging) transitions (for custom animations/sound effects, such as enlarging the thumb when it's grabbed).</summary>
     public Action<WidgetState>? OnStateChanged { get; init; }
 
     public override Element CreateElement() => new SliderElement(this);
 }
 
-/// <summary><see cref="Slider"/>holding entity. </summary>
+/// <summary>The element that holds a <see cref="Slider"/>.</summary>
 internal sealed class SliderElement : Element, IHoverTarget
 {
     private const float Height = 28f;

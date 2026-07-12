@@ -3,26 +3,26 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Immutable UI blueprint. <see cref="Element"/>differentially applied to
-/// (Not every frame).<see cref="Key"/>is used for identity determination (reuse/sort/delete).
-/// Does not have runtime resources (text renderer, etc.)<see cref="BuildContext"/>Supply via.
+/// An immutable UI blueprint. Diffed and applied to an <see cref="Element"/> (not on every frame).
+/// <see cref="Key"/> is used to determine identity (for reuse, reordering, removal). Widgets hold no runtime
+/// resources (such as a text renderer); those are supplied via <see cref="BuildContext"/>.
 /// </summary>
 public abstract class Widget
 {
-    /// <summary>A stable identifier (optional) to preserve the entity during sorting and insertion.</summary>
+    /// <summary>An optional, stable identifier used to preserve the corresponding entity across reordering and insertion.</summary>
     public object? Key { get; init; }
 
-    /// <summary>Generate a holding entity corresponding to this widget.</summary>
+    /// <summary>Creates the <see cref="Element"/> that backs this widget.</summary>
     public abstract Element CreateElement();
 
-    /// <summary>If they are of the same type and the keys match, you can update the existing Element without recreating it.</summary>
+    /// <summary>Returns whether an existing <see cref="Element"/> can be updated in place rather than recreated - true when both widgets are the same type and their keys match.</summary>
     public static bool CanUpdate(Widget oldWidget, Widget newWidget) =>
         oldWidget.GetType() == newWidget.GetType() && Equals(oldWidget.Key, newWidget.Key);
 }
 
 /// <summary>
-/// Runtime context (text renderer, etc.) that flows to the tree.
-/// Propagates from parent to child.
+/// Runtime context (such as the text renderer) that flows down the widget tree,
+/// propagating from parent to child.
 /// </summary>
 public readonly struct BuildContext
 {
@@ -56,40 +56,42 @@ public readonly struct BuildContext
         _traversalBlocked = traversalBlocked;
     }
 
-    /// <summary>The current atom scope (<see cref="Provider{T}"/>overwrite chain. </summary>
+    /// <summary>The current atom scope (the override chain established by <see cref="Provider{T}"/>).</summary>
     internal AtomScope? AtomScope { get; }
 
-    /// <summary>Current atom store (<see cref="StoreProvider"/>Separate store. </summary>
+    /// <summary>The current atom store (a separate store established by <see cref="StoreProvider"/>).</summary>
     internal AtomStore? Store { get; }
 
-    /// <summary>This partial tree<see cref="FocusNode"/>Can focus be registered? (<see cref="FocusableActionDetector"/>).</summary>
+    /// <summary>Whether a <see cref="FocusNode"/> can be registered within this subtree (controlled by <see cref="FocusableActionDetector"/>).</summary>
     internal bool Focusable => !_focusBlocked;
 
-    /// <summary>Whether this subtree is subject to direction traversal (explicit focus is possible even if false).</summary>
+    /// <summary>Whether this subtree participates in directional traversal (explicit focus is still possible even when false).</summary>
     internal bool Traversable => !_traversalBlocked;
 
-    /// <summary>Returns the context that narrows down focusability/traversability to be passed to the child (ANDed with ancestor restrictions).</summary>
+    /// <summary>Returns a context with focusability/traversability narrowed for the child (combined with ancestor restrictions via logical AND).</summary>
     internal BuildContext WithFocusGating(bool focusable, bool traversable) =>
         new(Text, Focus, Owner, _theme, AtomScope, Store, _focusBlocked || !focusable, _traversalBlocked || !traversable);
 
-    /// <summary>Returns the context plus the atom scope (<see cref="Provider{T}"/>).</summary>
+    /// <summary>Returns the context with the atom scope set (established by <see cref="Provider{T}"/>).</summary>
     internal BuildContext WithAtomScope(AtomScope? scope) => new(Text, Focus, Owner, _theme, scope, Store, _focusBlocked, _traversalBlocked);
 
-    /// <summary>Returns the context with the atom store replaced (<see cref="StoreProvider"/>).</summary>
+    /// <summary>Returns the context with the atom store replaced (established by <see cref="StoreProvider"/>).</summary>
     internal BuildContext WithStore(AtomStore store) => new(Text, Focus, Owner, _theme, AtomScope, store, _focusBlocked, _traversalBlocked);
 
     public ITextRenderer? Text { get; }
 
-    /// <summary>Focus management (gamepad direction movement/OK/Cancel).</summary>
+    /// <summary>Focus management (gamepad directional movement, OK/Cancel).</summary>
     public FocusManager? Focus { get; }
 
-    /// <summary>host. </summary>
+    /// <summary>The host.</summary>
     public IHamonHost? Owner { get; }
 
     /// <summary>
-    /// Default UI style.<see cref="HamonRoot.EffectiveTheme"/>(after solving mode+DarkTheme)<b>live</b>For reference,
-    /// If you replace the theme or mode at runtime, it will be reflected even if you redraw without rebuilding (it is not bound by the context snapshot of the reused element).
-    /// Build-time snapshot if Owner is not the visual host, otherwise<see cref="HamonTheme.Default"/>(Ripple Light).
+    /// The active UI style. When <see cref="Owner"/> is the visual host, this refers <b>live</b> to
+    /// <see cref="HamonRoot.EffectiveTheme"/> (resolved from the theme mode plus <see cref="HamonRoot.DarkTheme"/>),
+    /// so replacing the theme or mode at runtime is reflected on redraw even without a rebuild - it is not bound
+    /// to the context snapshot captured when the element was created. Otherwise, this is a build-time snapshot,
+    /// falling back to <see cref="HamonTheme.Default"/> (Ripple Light) if none was supplied.
     /// </summary>
     public HamonTheme Theme => (Owner as HamonRoot)?.EffectiveTheme ?? _theme ?? HamonTheme.Default;
 
@@ -97,8 +99,8 @@ public readonly struct BuildContext
 }
 
 /// <summary>
-/// UI entity to be preserved.
-/// child is updated with keyed reconcile.<see cref="Context"/>Get runtime resources from.
+/// A persistent UI entity. Children are updated via keyed reconciliation. Runtime resources are obtained
+/// from <see cref="Context"/>.
 /// </summary>
 public abstract class Element
 {
@@ -126,41 +128,44 @@ public abstract class Element
 
     public virtual void Unmount() => IsMounted = false;
 
-    /// <summary>confirmed<see cref="LayoutNode.Bounds"/>(default is no drawing).</summary>
+    /// <summary>Paints using the confirmed <see cref="LayoutNode.Bounds"/> (does nothing by default).</summary>
     public virtual void Paint(in PaintContext context)
     {
     }
 
     /// <summary>
-    /// Rebuild only this entity (avoid whole tree reconcile =<see cref="Bind{T}"/>etc.) for frequent updates).
-    /// <see cref="HamonRoot"/>is called for dirty registered entities.
+    /// Rebuilds only this entity, avoiding a whole-tree reconcile (used by <see cref="Bind{T}"/> and similar
+    /// constructs for frequent updates). Called by <see cref="HamonRoot"/> for entities registered as dirty.
     /// </summary>
     internal virtual void RebuildInPlace()
     {
     }
 
-    /// <summary>Fruiting body (for hit testing/traversing drawings). </summary>
+    /// <summary>Child elements (used for hit testing and paint traversal).</summary>
     public virtual IReadOnlyList<Element> Children => Array.Empty<Element>();
 
-    /// <summary>Does it receive pointer (touch/mouse)?<see cref="GestureDetector"/>etc. are true.</summary>
+    /// <summary>Whether this entity receives pointer (touch/mouse) events; true for <see cref="GestureDetector"/> and similar.</summary>
     public virtual bool WantsPointer => false;
 
-    /// <summary>Handle hit pointer events.</summary>
+    /// <summary>Handles a pointer event that hit this entity.</summary>
     public virtual void HandlePointer(in PointerEvent pointer)
     {
     }
 
     /// <summary>
-    /// The transformation by which the child's hit test/pointer delivery is multiplied (from this element's coordinate space to the child's coordinate space).
-    /// Draw to child<see cref="PaintContext.WithTransform"/>The element that accumulates (<see cref="InteractiveViewer"/>etc.) is that<b>Inverse transformation</b>When you return
-    /// Hit test and pointer position (after capture) matches display (<see cref="Transform"/>is null because it is only drawn).
+    /// The transform applied when performing hit testing and delivering pointer events to children, mapping
+    /// from this element's coordinate space into the child's coordinate space.
+    /// Elements that accumulate a transform when painting children via <see cref="PaintContext.WithTransform"/>
+    /// (such as <see cref="Transform"/> / <see cref="InteractiveViewer"/>) should return the <b>inverse</b> of
+    /// that transform here, so that hit testing and pointer position (after capture) match what is displayed.
+    /// Null for elements that only paint and do not transform their children.
     /// </summary>
     internal virtual Transform2D? ChildHitTestTransform => null;
 
-    /// <summary>This entity holds<see cref="FocusNode"/>(if any). </summary>
+    /// <summary>The <see cref="FocusNode"/> held by this entity, if any.</summary>
     internal virtual FocusNode? FocusNodeOrNull => null;
 
-    /// <summary>This entity holds<see cref="FocusScopeNode"/>(if any). </summary>
+    /// <summary>The <see cref="FocusScopeNode"/> held by this entity, if any.</summary>
     internal virtual FocusScopeNode? ScopeNodeOrNull => null;
 
     /// <summary>Nearest ancestor scroll element (for scroll-to-focus; null if not present).</summary>
@@ -177,7 +182,7 @@ public abstract class Element
         return null;
     }
 
-    /// <summary>closest ancestor including yourself<see cref="FocusScopeNode"/>(belonging scope at the time of focus registration).</summary>
+    /// <summary>The nearest <see cref="FocusScopeNode"/>, including this entity itself (the scope this entity belonged to at focus-registration time).</summary>
     internal FocusScopeNode? EnclosingScope()
     {
         for (Element? current = this; current is not null; current = current.Parent)
@@ -192,12 +197,12 @@ public abstract class Element
     }
 }
 
-/// <summary>Entry that reflects the root widget to the tree.</summary>
+/// <summary>Entry point that applies the root widget to the element tree.</summary>
 public static class Reconciler
 {
     /// <summary>
-    /// Existing route<paramref name="current"/>of<paramref name="widget"/>Update with.
-    /// If there is no identity, recreate it.
+    /// Updates the existing <paramref name="current"/> element with <paramref name="widget"/>, or recreates
+    /// it if identity cannot be preserved.
     /// </summary>
     public static Element Reconcile(Element? current, Widget widget, BuildContext context = default)
     {

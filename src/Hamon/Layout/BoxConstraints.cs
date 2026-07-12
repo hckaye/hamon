@@ -1,8 +1,8 @@
 namespace Hamon.Layout;
 
 /// <summary>
-/// Dimensional constraints passed from parent to child in layout (equivalent to BoxConstraints in Flutter).
-/// Max is<see cref="float.PositiveInfinity"/>represents "no upper limit (shrinks to fit the content)".
+/// Dimensional constraints passed from parent to child during layout (equivalent to Flutter's BoxConstraints).
+/// A max of <see cref="float.PositiveInfinity"/> means "no upper limit (shrink to fit the content)".
 /// </summary>
 public readonly struct BoxConstraints
 {

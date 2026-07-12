@@ -1,49 +1,52 @@
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Interactive widget state (Flutter<c>WidgetState</c>equivalent).
-/// （<see cref="WidgetStateProperty{T}"/>) used for
+/// Interactive widget state (equivalent to Flutter's <c>WidgetState</c>), used with
+/// <see cref="WidgetStateProperty{T}"/>.
 /// <para>
-/// <b>Differences with Flutter (intentional)</b>:Flutter is<c>WidgetState</c>Individual enum +<c>Set&lt;WidgetState&gt;</c>in
-/// Hamon represents a set of states.<b>Do not allocate heap by resolving every frame/input</b>Because<c>[Flags]</c>in
-/// Represents a set in bits (ZeroAlloc exception). <c>Contains</c>teeth<see cref="WidgetStateExtensions.Has"/>。
+/// <b>Intentional difference from Flutter</b>: Flutter represents state as an individual <c>WidgetState</c>
+/// enum value plus a <c>Set&lt;WidgetState&gt;</c>. Hamon instead represents a set of states as bit flags via
+/// <c>[Flags]</c>, so that resolving state on every frame/input does not allocate on the heap (a ZeroAlloc
+/// exception). Use <see cref="WidgetStateExtensions.Has"/> instead of <c>Contains</c>.
 /// </para>
 /// </summary>
 [Flags]
 public enum WidgetState : byte
 {
-    /// <summary>No condition.</summary>
+    /// <summary>No state.</summary>
     None = 0,
 
     /// <summary>Disabled (does not accept input, appears dimmed).</summary>
     Disabled = 1 << 0,
 
-    /// <summary>The pointer is on top (mouse hover).</summary>
+    /// <summary>The pointer is over the widget (mouse hover).</summary>
     Hovered = 1 << 1,
 
     /// <summary>In focus (keyboard/gamepad).</summary>
     Focused = 1 << 2,
 
-    /// <summary>Pressing down.</summary>
+    /// <summary>Being pressed.</summary>
     Pressed = 1 << 3,
 
-    /// <summary>Selected (toggle/tab/check, etc. ON).</summary>
+    /// <summary>Selected (e.g., a toggle, tab, or checkbox in the on state).</summary>
     Selected = 1 << 4,
 }
 
-/// <summary><see cref="WidgetState"/>bit set operations (such as ZeroAlloc)<c>Set.Contains</c>equivalent).</summary>
+/// <summary>ZeroAlloc bit-set operations for <see cref="WidgetState"/> (equivalent to <c>Set.Contains</c>).</summary>
 public static class WidgetStateExtensions
 {
-    /// <summary><paramref name="states"/>to<paramref name="state"/>(Flutter's<c>states.contains(...)</c>equivalent).</summary>
+    /// <summary>Returns whether <paramref name="states"/> includes <paramref name="state"/> (equivalent to Flutter's <c>states.contains(...)</c>).</summary>
     public static bool Has(this WidgetState states, WidgetState state) => (states & state) != 0;
 }
 
 /// <summary>
-/// Properties that resolve values ​​depending on state (Flutter<c>WidgetStateProperty&lt;T&gt;</c>equivalent).
-/// Background color, foreground color, frame, margin, etc.<see cref="WidgetState"/>Used to switch between.
+/// A property whose value depends on state (equivalent to Flutter's <c>WidgetStateProperty&lt;T&gt;</c>).
+/// Used to switch background color, foreground color, border, margin, and similar values based on
+/// <see cref="WidgetState"/>.
 /// <para>
-/// <b>Differences with Flutter (intentional)</b>:The resolution function is<c>Func&lt;Set&lt;WidgetState&gt;, T&gt;</c>not
-/// <c>Func&lt;WidgetState, T&gt;</c>Receive (bit set) = do not allocate heap during resolution (ZeroAlloc exception).
+/// <b>Intentional difference from Flutter</b>: instead of a resolver function taking
+/// <c>Func&lt;Set&lt;WidgetState&gt;, T&gt;</c>, Hamon's resolver takes <c>Func&lt;WidgetState, T&gt;</c>
+/// (a bit set), so resolving a value does not allocate on the heap (a ZeroAlloc exception).
 /// </para>
 /// </summary>
 public sealed class WidgetStateProperty<T>
@@ -57,15 +60,15 @@ public sealed class WidgetStateProperty<T>
         _resolver = resolver;
     }
 
-    /// <summary>Same value in all states (Flutter<c>WidgetStatePropertyAll</c> / <c>WidgetStateProperty.all</c>equivalent).</summary>
+    /// <summary>The same value in every state (equivalent to Flutter's <c>WidgetStatePropertyAll</c> / <c>WidgetStateProperty.all</c>).</summary>
     public static WidgetStateProperty<T> All(T value) => new(value, null);
 
-    /// <summary>Compute values ​​from a set of states (Flutter<c>WidgetStateProperty.resolveWith</c>equivalent).</summary>
+    /// <summary>Computes a value from a state set (equivalent to Flutter's <c>WidgetStateProperty.resolveWith</c>).</summary>
     public static WidgetStateProperty<T> ResolveWith(Func<WidgetState, T> resolver) => new(default!, resolver);
 
-    /// <summary>state set<paramref name="states"/>Resolve the value for .</summary>
+    /// <summary>Resolves the value for the given state set <paramref name="states"/>.</summary>
     public T Resolve(WidgetState states) => _resolver is null ? _constant : _resolver(states);
 
-    /// <summary>constant value<see cref="All"/>Implicit conversion as (<c>BackgroundColor = color</c>).</summary>
+    /// <summary>Implicit conversion to a constant value via <see cref="All"/> (e.g., <c>BackgroundColor = color</c>).</summary>
     public static implicit operator WidgetStateProperty<T>(T value) => All(value);
 }

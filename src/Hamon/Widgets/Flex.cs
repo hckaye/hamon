@@ -3,14 +3,15 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// <see cref="Row"/>/<see cref="Column"/>**Occupy extra main axis** within Flutter and spread the children to fill that area (Flutter<c>Expanded</c>）。
-/// If there are multiple<see cref="Flex"/>Distribute by ratio.
+/// Occupies the extra main-axis space within a <see cref="Row"/>/<see cref="Column"/> and stretches the child
+/// to fill that area (equivalent to Flutter's <c>Expanded</c>). If there are multiple such widgets, the extra
+/// space is distributed according to their <see cref="Flex"/> ratio.
 /// </summary>
 public sealed class Expanded : Widget, IRenderConfig
 {
     public Widget? Child { get; init; }
 
-    /// <summary>Surplus share (default 1).</summary>
+    /// <summary>Share of the extra space to occupy, relative to siblings (default 1).</summary>
     public int Flex { get; init; } = 1;
 
     Style IRenderConfig.Style => new()
@@ -28,8 +29,9 @@ public sealed class Expanded : Widget, IRenderConfig
 }
 
 /// <summary>
-/// <see cref="Expanded"/>A loose version of Flutter<c>Flexible(fit: loose)</c>). <see cref="Flex"/>in comparison
-/// It is set aside, but if the child is less than the allocation, it remains at its natural size (does not expand to fill the area).
+/// A "loose" version of <see cref="Expanded"/> (equivalent to Flutter's <c>Flexible(fit: loose)</c>). Space is
+/// still allocated in proportion to <see cref="Flex"/>, but if the child is smaller than its allocation, it
+/// remains at its natural size (it does not stretch to fill the area).
 /// </summary>
 public sealed class Flexible : Widget, IRenderConfig
 {
@@ -51,7 +53,7 @@ public sealed class Flexible : Widget, IRenderConfig
     public override Element CreateElement() => new RenderElement(this);
 }
 
-/// <summary><see cref="Row"/>/<see cref="Column"/>Insert a space that stretches (Flutter<c>Spacer</c>）。<see cref="Flex"/>Occupy surplus in ratio.</summary>
+/// <summary>Inserts a stretchy space within a <see cref="Row"/>/<see cref="Column"/> (equivalent to Flutter's <c>Spacer</c>). Occupies extra space in proportion to <see cref="Flex"/>.</summary>
 public sealed class Spacer : Widget, IRenderConfig
 {
     public int Flex { get; init; } = 1;

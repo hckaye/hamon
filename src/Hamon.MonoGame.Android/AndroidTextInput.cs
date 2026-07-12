@@ -11,15 +11,19 @@ namespace Hamon.MonoGame.Android;
 
 /// <summary>
 /// Android text input/IME backend (<see cref="ITextInput"/>).
-/// <see cref="HamonInputConnection"/>（<see cref="HamonRoot"/>game view<c>OnCreateInputConnection</c>returns) from
-/// Confirmed characters/Converting/Deleting<see cref="HamonRoot.DispatchText"/>/<see cref="HamonRoot.DispatchComposition"/>/<see cref="HamonRoot.DispatchEditKey"/>flow to
-/// The conversion candidate UI is displayed by the OS keyboard (normal mobile UX). <see cref="HamonRoot.SoftKeyboardHeight"/>Reflect on.
+/// Returns a <see cref="HamonInputConnection"/> from the game view's <c>OnCreateInputConnection</c>
+/// (<see cref="HamonRoot"/> is the game view here); confirmed characters, composition updates, and deletes
+/// flow into <see cref="HamonRoot.DispatchText"/>, <see cref="HamonRoot.DispatchComposition"/>, and
+/// <see cref="HamonRoot.DispatchEditKey"/> respectively. The conversion candidate UI is shown by the OS
+/// keyboard itself (normal mobile UX); the keyboard's height is reflected in
+/// <see cref="HamonRoot.SoftKeyboardHeight"/>.
 ///
-/// Integration procedure: (1) Game<c>View</c>(MonoGame's<c>AndroidGameView</c>etc.) in<c>OnCheckIsTextEditor()=&gt;true</c>and
-/// <c>OnCreateInputConnection</c>override<see cref="CreateInputConnection"/>return.
-/// <c>host.TextInput = androidTextInput;</c>.
-/// keyboard height<see cref="HamonRoot.SoftKeyboardHeight"/>Set to (<see cref="AttachKeyboardHeightWatcher"/>auxiliary).
-/// Actual device verification premise (API-compliant reference implementation).
+/// Integration steps: (1) In the game <c>View</c> (e.g. MonoGame's <c>AndroidGameView</c>), override
+/// <c>OnCheckIsTextEditor()</c> to return <c>true</c> and override <c>OnCreateInputConnection</c> to return
+/// <see cref="CreateInputConnection"/>. (2) Set <c>host.TextInput = androidTextInput;</c>. (3) Feed the
+/// keyboard height into <see cref="HamonRoot.SoftKeyboardHeight"/> (<see cref="AttachKeyboardHeightWatcher"/>
+/// helps with this). This is a reference implementation that follows the platform APIs but has not been
+/// verified on an actual device.
 /// </summary>
 public sealed class AndroidTextInput : ITextInput
 {
@@ -52,7 +56,7 @@ public sealed class AndroidTextInput : ITextInput
     {
     }
 
-    /// <summary>game view<c>OnCreateInputConnection</c>Generate an InputConnection to return from.</summary>
+    /// <summary>Creates the <see cref="IInputConnection"/> to return from the game view's <c>OnCreateInputConnection</c>.</summary>
     public IInputConnection CreateInputConnection(EditorInfo outAttrs)
     {
         outAttrs.InputType = InputTypes.ClassText | InputTypes.TextFlagNoSuggestions;
@@ -60,7 +64,7 @@ public sealed class AndroidTextInput : ITextInput
         return new HamonInputConnection(_host, _view);
     }
 
-    /// <summary>Estimate the soft keyboard height from the visible height of the root view<see cref="HamonRoot.SoftKeyboardHeight"/>reflected in</summary>
+    /// <summary>Estimates the soft keyboard height from the root view's visible height and reflects it in <see cref="HamonRoot.SoftKeyboardHeight"/>.</summary>
     public void AttachKeyboardHeightWatcher(View root) => root.ViewTreeObserver!.GlobalLayout += (_, _) =>
     {
         var visible = new global::Android.Graphics.Rect();
@@ -69,7 +73,7 @@ public sealed class AndroidTextInput : ITextInput
         _host.SoftKeyboardHeight = covered > root.RootView.Height * 0.15f ? covered : 0f; // 15%超で「キーボードあり」
     };
 
-    /// <summary>InputConnection that bridges commit/transform/delete to Hamon core.</summary>
+    /// <summary>InputConnection that bridges commit, composition, and delete events to the Hamon core.</summary>
     private sealed class HamonInputConnection : BaseInputConnection
     {
         private readonly HamonRoot _host;

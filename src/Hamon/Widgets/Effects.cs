@@ -3,9 +3,9 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Draw children with opacity 0..1 (Flutter<c>Opacity</c>）。<see cref="ValueGetter"/>If you pass , it will be read every frame when drawing
-/// （<c>() =&gt; ctrl.Curved</c>= fade without reconstruction). <see cref="Value"/>。
-/// Layout remains unchanged (drawing only).
+/// Draws the child with opacity in 0..1 (equivalent to Flutter's <c>Opacity</c>). If <see cref="ValueGetter"/>
+/// is passed, it is read every frame at draw time (e.g. <c>() =&gt; ctrl.Curved</c>, enabling fades without
+/// rebuilding); otherwise <see cref="Value"/> is used. Layout is unaffected (drawing only).
 /// </summary>
 public sealed class Opacity : Widget, IRenderConfig
 {
@@ -13,7 +13,7 @@ public sealed class Opacity : Widget, IRenderConfig
 
     public float Value { get; init; } = 1f;
 
-    /// <summary>Opacity to be read each time drawing (for anime). <see cref="Value"/>More priority.</summary>
+    /// <summary>Opacity read each time the widget is drawn (for animation). Takes priority over <see cref="Value"/> when set.</summary>
     public Func<float>? ValueGetter { get; init; }
 
     internal float Resolve() => ValueGetter?.Invoke() ?? Value;
@@ -27,7 +27,7 @@ public sealed class Opacity : Widget, IRenderConfig
     public override Element CreateElement() => new OpacityElement(this);
 }
 
-/// <summary><see cref="Opacity"/>holding entity. </summary>
+/// <summary>The element that holds an <see cref="Opacity"/>.</summary>
 internal sealed class OpacityElement : RenderElement
 {
     public OpacityElement(Opacity widget)
@@ -43,10 +43,13 @@ internal sealed class OpacityElement : RenderElement
 }
 
 /// <summary>
-/// Draw by applying transformation (scaling + parallel translation + rotation) to the child (Flutter<c>Transform</c>equivalent).
-/// <c>*Getter</c>(Read each time you draw = animation).<see cref="Origin"/>is the scaling/rotation fulcrum (default center).
-/// <b>Layout/hit test remains original rectangle</b>(Conversion of drawing only) = Suitable for transition effects/spinners/dials.
-/// Rotation is for single content (icon/image/shape), and text being rotated, rotated clips, and non-uniform scale + rotation nesting are not applicable (approximation).
+/// Draws the child with a transformation (scale + translation + rotation) applied, equivalent to Flutter's
+/// <c>Transform</c>. The corresponding <c>*Getter</c> properties are read every frame at draw time, enabling
+/// animation. <see cref="Origin"/> is the pivot for scaling/rotation (default: center).
+/// <b>Layout and hit-testing remain based on the original rectangle</b> (only drawing is transformed), which
+/// makes this suitable for transition effects, spinners, and dials.
+/// Rotation is intended for single pieces of content (icon/image/shape); rotating text, rotated clipping, and
+/// nested non-uniform scale + rotation are not supported (the result is only an approximation).
 /// </summary>
 public sealed class Transform : Widget, IRenderConfig
 {
@@ -56,18 +59,18 @@ public sealed class Transform : Widget, IRenderConfig
 
     public Func<float>? ScaleGetter { get; init; }
 
-    /// <summary>Rotation (radian/clockwise). </summary>
+    /// <summary>Rotation in radians (clockwise).</summary>
     public float Rotation { get; init; }
 
-    /// <summary>Read rotation each time when drawing (for animation. When setting<see cref="Rotation"/>priority).</summary>
+    /// <summary>Rotation read each time the widget is drawn (for animation). Takes priority over <see cref="Rotation"/> when set.</summary>
     public Func<float>? RotationGetter { get; init; }
 
     internal float ResolveRotation() => RotationGetter?.Invoke() ?? Rotation;
 
-    /// <summary>Scale getter for X axis only (uniform if unspecified)<see cref="Scale"/>/<see cref="ScaleGetter"/>).</summary>
+    /// <summary>Scale getter for the X axis only (falls back to uniform scaling via <see cref="Scale"/>/<see cref="ScaleGetter"/> if unspecified).</summary>
     public Func<float>? ScaleXGetter { get; init; }
 
-    /// <summary>Scale getter for Y axis only (uniform if unspecified).</summary>
+    /// <summary>Scale getter for the Y axis only (falls back to uniform scaling if unspecified).</summary>
     public Func<float>? ScaleYGetter { get; init; }
 
     public float TranslateX { get; init; }
@@ -78,7 +81,7 @@ public sealed class Transform : Widget, IRenderConfig
 
     public Func<float>? TranslateYGetter { get; init; }
 
-    /// <summary>Scaling fulcrum (default<see cref="Alignment.Center"/>）。</summary>
+    /// <summary>Pivot for scaling/rotation (defaults to <see cref="Alignment.Center"/>).</summary>
     public Alignment Origin { get; init; } = Alignment.Center;
 
     internal float ResolveScale() => ScaleGetter?.Invoke() ?? Scale;
@@ -100,7 +103,7 @@ public sealed class Transform : Widget, IRenderConfig
     public override Element CreateElement() => new TransformElement(this);
 }
 
-/// <summary><see cref="Transform"/>holding entity. </summary>
+/// <summary>The element that holds a <see cref="Transform"/>.</summary>
 internal sealed class TransformElement : RenderElement
 {
     public TransformElement(Transform widget)

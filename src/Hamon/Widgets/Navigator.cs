@@ -3,18 +3,21 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// A transition builder that wraps route entry and exit with progress 0..1 (1 = fully visible).<see cref="Opacity"/>/<see cref="Transform"/>of
-/// <paramref name="progress"/>If you run it with (a getter that is read every time it is drawn), it will be an animation without reconstruction.
+/// A transition builder that wraps a route's entry and exit animation with a
+/// progress value in the range 0..1 (1 = fully visible). Implementations typically
+/// drive an <see cref="Opacity"/> or <see cref="Transform"/> using a getter that reads
+/// <paramref name="progress"/> on every paint, so the animation runs without
+/// rebuilding the widget tree.
 /// </summary>
 public delegate Widget RouteTransition(Widget child, Func<float> progress);
 
-/// <summary>Standard route transition.</summary>
+/// <summary>Standard route transitions.</summary>
 public static class RouteTransitions
 {
-    /// <summary>No transition (only the substance is used = the builder side uses progress to create an appearance).</summary>
+    /// <summary>No transition: returns the content unchanged and ignores the progress value.</summary>
     public static readonly RouteTransition None = static (child, _) => child;
 
-    /// <summary>Fade only (no enlargement = when you want to avoid missing edges in full-screen scrims, etc.).</summary>
+    /// <summary>Fade only, without scaling. Useful for full-screen scrims and similar cases where scaling would reveal gaps at the edges.</summary>
     public static readonly RouteTransition Fade = static (child, progress) => new Opacity { ValueGetter = progress, Child = child };
 
     /// <summary>Fade + slight expansion (modal style).</summary>
@@ -31,9 +34,10 @@ public static class RouteTransitions
 }
 
 /// <summary>
-/// 1 root (screen) of the navigation stack.<see cref="NavigatorController.Push"/>With the return value of
-/// Also serves as the stable identity (Key) of reconcile.<see cref="NavigatorController.Pop"/>The result is
-/// <see cref="OnResult"/>Return to
+/// A single route (screen) in the navigation stack. Returned by
+/// <see cref="NavigatorController.Push"/>, and also used as the stable identity (Key)
+/// for reconciliation. The result passed to <see cref="NavigatorController.Pop"/> is
+/// delivered back through <see cref="OnResult"/>.
 /// </summary>
 public sealed class NavRoute
 {
@@ -50,7 +54,7 @@ public sealed class NavRoute
     internal Widget Build() => _build();
 }
 
-/// <summary>Route being rendered (has state for transition animation. Continues drawing until completion even while exiting).</summary>
+/// <summary>A route currently being rendered. Holds the state for its transition animation and keeps drawing until the exit animation completes.</summary>
 internal sealed class RouteEntry
 {
     public RouteEntry(NavRoute route, AnimationController? anim)
@@ -67,12 +71,14 @@ internal sealed class RouteEntry
 }
 
 /// <summary>
-/// Imperative navigation that maintains root stack and pushes/pops (Flutter<c>Navigator</c>thin version).
-/// The app generates<see cref="Navigator"/>give it to
-/// overlay/<see cref="FocusScope"/>(each root is<see cref="FocusScope"/>in
-/// Wrapped, focus can only be placed on the frontmost route (Pop returns to previous route).
-/// <see cref="TransitionDuration"/>When >0, push/pop is<see cref="Transition"/>Animated with
-/// <b>Even if you pop, keep the subtree alive until the exit animation is completed.</b>(Default 0 = Immediate).
+/// Imperative navigation controller that maintains a route stack and handles
+/// push/pop (a thin version of Flutter's <c>Navigator</c>). The app creates one and
+/// passes it to a <see cref="Navigator"/> overlay. Each route is wrapped in a
+/// <see cref="FocusScope"/>, so focus can only land on the frontmost route (popping
+/// returns focus to the previous route). When <see cref="TransitionDuration"/> is
+/// greater than 0, push/pop are animated using <see cref="Transition"/>.
+/// <b>Even after a route is popped, its subtree is kept alive until the exit
+/// animation finishes.</b> (Default is 0, meaning immediate with no animation.)
 /// </summary>
 public sealed class NavigatorController
 {
@@ -80,8 +86,8 @@ public sealed class NavigatorController
     private readonly List<NavRoute> _routes = new();
     private readonly List<RouteEntry> _entries = new();
 
-    /// <param name="host">Change notification destination (make dirty for rebuild).</param>
-    /// <param name="home">The first root (the foundation that does not disappear with pop).</param>
+    /// <param name="host">The host to notify of changes (marked dirty to trigger a rebuild).</param>
+    /// <param name="home">The initial route (the base of the stack, which cannot be popped).</param>
     public NavigatorController(HamonRoot host, Func<Widget> home)
     {
         _host = host;
@@ -90,33 +96,33 @@ public sealed class NavigatorController
         _entries.Add(new RouteEntry(route, null)); // home は入場アニメなし
     }
 
-    /// <summary>Current root stack (bottom → top). </summary>
+    /// <summary>The current route stack, ordered bottom to top.</summary>
     public IReadOnlyList<NavRoute> Routes => _routes;
 
-    /// <summary>Number of routes stacked (including home, excluding routes while leaving).</summary>
+    /// <summary>Number of routes on the stack (including home, excluding routes that are currently exiting).</summary>
     public int Count => _routes.Count;
 
-    /// <summary>Is there anything higher than home (can you go back)?</summary>
+    /// <summary>Whether there is anything above home on the stack (i.e., whether <see cref="Pop"/> is possible).</summary>
     public bool CanPop => _routes.Count > 1;
 
     /// <summary>Push/pop transition animation seconds (default 0 = immediate, no animation).</summary>
     public float TransitionDuration { get; set; }
 
-    /// <summary>Route transition appearance (default<see cref="RouteTransitions.FadeScale"/>）。</summary>
+    /// <summary>The route transition to use (default <see cref="RouteTransitions.FadeScale"/>).</summary>
     public RouteTransition Transition { get; set; } = RouteTransitions.FadeScale;
 
     public Curve Curve { get; set; } = Curves.EaseOut;
 
-    /// <summary>The route being drawn (including while leaving).<see cref="Navigator"/>read).</summary>
+    /// <summary>The routes currently being drawn (including ones that are exiting), read by <see cref="Navigator"/>.</summary>
     internal IReadOnlyList<RouteEntry> Entries => _entries;
 
-    /// <summary>Progress during transition animation (1=upper route fully visible). <see cref="HeroLayer"/>read into flight interpolation.</summary>
+    /// <summary>Progress of the current transition animation (1 = the upper route is fully visible), read by <see cref="HeroLayer"/> for flight interpolation.</summary>
     internal Func<float>? ActiveTransition { get; private set; }
 
     /// <summary>Number of routes being drawn (including during exit animation, for inspection/testing purposes).</summary>
     internal int RenderedCount => _entries.Count;
 
-    /// <summary>Lay out new routes.</summary>
+    /// <summary>Pushes a new route onto the stack.</summary>
     public NavRoute Push(Func<Widget> build, Action<object?>? onResult = null)
     {
         var route = new NavRoute(build, onResult);
@@ -141,7 +147,7 @@ public sealed class NavigatorController
         return route;
     }
 
-    /// <summary>Drops the frontmost route and returns the result. </summary>
+    /// <summary>Pops the frontmost route and delivers <paramref name="result"/> to its <see cref="NavRoute.OnResult"/> callback. Returns <see langword="false"/> if only the home route remains.</summary>
     public bool Pop(object? result = null)
     {
         if (_routes.Count <= 1)
@@ -186,15 +192,17 @@ public sealed class NavigatorController
             }
         }
 
-        throw new InvalidOperationException("pop 対象のルートに対応する描画エントリが無い。");
+        throw new InvalidOperationException("No render entry found for the route being popped.");
     }
 }
 
 /// <summary>
-/// <see cref="NavigatorController"/>Draw the root stack of (Flutter<c>Navigator</c>equivalent).
-/// each route<see cref="FocusScope"/>Full screen wrapped in<see cref="Stack"/>Stack on = front in z order,
-/// The focus is automatically locked to the frontmost route. <see cref="NavigatorController.Pop"/>
-/// Wiring is done in one line on the app side (<c>if (b==Dismiss &amp;&amp; nav.Pop()) return;</c>）。
+/// Draws the route stack of a <see cref="NavigatorController"/> (the equivalent of
+/// Flutter's <c>Navigator</c>). Each route is wrapped full-screen in a
+/// <see cref="FocusScope"/> and stacked using <see cref="Stack"/> (later entries are
+/// on top in z-order), so focus is automatically locked to the frontmost route.
+/// Wiring up <see cref="NavigatorController.Pop"/> is a one-liner on the app side
+/// (e.g. <c>if (b == Dismiss &amp;&amp; nav.Pop()) return;</c>).
 /// </summary>
 public sealed class Navigator : StatelessWidget
 {
@@ -203,7 +211,7 @@ public sealed class Navigator : StatelessWidget
     public override Widget Build(BuildContext context)
     {
         NavigatorController controller = Controller
-            ?? throw new InvalidOperationException("Navigator には Controller が必要。");
+            ?? throw new InvalidOperationException("Navigator requires a Controller.");
 
         // Hero の本体描画を flight 中に省くためのフラグ（push/pop の進捗有無で決まる＝再構築は push/pop/完了時のみ）。
         if (context.Owner is HamonRoot host)

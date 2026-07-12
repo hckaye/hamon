@@ -1,9 +1,9 @@
 namespace Hamon.Layout;
 
 /// <summary>
-/// Virtualized viewport (<c>ListView</c>etc.) custom measurement hooks. <see cref="LayoutNode.Virtual"/>but
-/// Call this on the configured node. <see cref="LayoutNode"/>children and offset of
-/// Set and return viewport size (subsequent engine Arrange positions to absolute coordinates).
+/// Custom measurement hook for a virtualized viewport (<c>ListView</c> etc.). Called on the node that has
+/// <see cref="LayoutNode.Virtual"/> set, using the node's children and scroll offset to compute and
+/// return the viewport size (the engine's subsequent Arrange pass positions children at absolute coordinates).
 /// </summary>
 public interface IVirtualLayout
 {
@@ -11,9 +11,9 @@ public interface IVirtualLayout
 }
 
 /// <summary>
-/// The node to be laid out (the base of the retention tree).<see cref="Style"/>have a child,
-/// The leaf nodes are<see cref="Measure"/>returns the natural size of the content (text, etc.).
-/// after layout<see cref="Size"/>／<see cref="Bounds"/>(absolute rectangle) is determined.
+/// A node to be laid out (the base unit of the retained tree). Has a <see cref="Style"/> and children;
+/// leaf nodes use <see cref="Measure"/> to return the natural size of their content (e.g. text).
+/// After layout, <see cref="Size"/> and <see cref="Bounds"/> (the absolute rectangle) are determined.
 /// </summary>
 public sealed class LayoutNode
 {
@@ -27,10 +27,10 @@ public sealed class LayoutNode
 
     public Style Style { get; set; }
 
-    /// <summary>A function that returns the content natural size of a leaf node (such as text measurement). </summary>
+    /// <summary>A function that returns the natural content size of a leaf node (such as text measurement).</summary>
     public Func<BoxConstraints, Size>? Measure { get; set; }
 
-    /// <summary>When set, as a virtualized viewport<see cref="IVirtualLayout.Measure"/>Measure with (<c>ListView</c>etc.).</summary>
+    /// <summary>When set, this node is measured as a virtualized viewport using <see cref="IVirtualLayout.Measure"/> (e.g. <c>ListView</c>).</summary>
     public IVirtualLayout? Virtual { get; set; }
 
     public IReadOnlyList<LayoutNode> Children => _children;
@@ -47,7 +47,7 @@ public sealed class LayoutNode
     internal float BaseMain;
     internal float FinalMain;
 
-    /// <summary><see cref="LayoutKind.Scroll"/>Scroll amount (main axis).<c>ScrollView</c>The entity is set before layout.</summary>
+    /// <summary>Scroll amount (main axis) for <see cref="LayoutKind.Scroll"/>; set by the <c>ScrollView</c> entity before layout.</summary>
     internal float ScrollOffset;
 
     /// <summary>Constraints from the last measurement (used for relayout of subtrees = targeted relayout).</summary>

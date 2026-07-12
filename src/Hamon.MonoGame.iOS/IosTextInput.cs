@@ -7,13 +7,15 @@ using UIKit;
 namespace Hamon.MonoGame.iOS;
 
 /// <summary>
-/// iOS text input/IME backend (<see cref="ITextInput"/>). <see cref="IUIKeyInput"/>view
-/// Set it to first responder to display the soft keyboard and enter the final character.<see cref="HamonRoot.DispatchText"/>, delete
-/// <see cref="HamonRoot.DispatchEditKey"/>flow to
-/// Keyboard height from notification<see cref="HamonRoot.SoftKeyboardHeight"/>reflected in
+/// iOS text input/IME backend (<see cref="ITextInput"/>). An <see cref="IUIKeyInput"/> view is made the
+/// first responder to show the soft keyboard; confirmed characters flow into
+/// <see cref="HamonRoot.DispatchText"/>, and deletes flow into <see cref="HamonRoot.DispatchEditKey"/>.
+/// Keyboard height is obtained from a system notification and reflected in
+/// <see cref="HamonRoot.SoftKeyboardHeight"/>.
 ///
-/// Integration: Generate this type and<c>host.TextInput = iosTextInput;</c>(After starting the game/in the UI thread).
-/// If you need inline display during conversion (marked text)<c>IUITextInput</c>Extensible (optional) with a set of implementations.
+/// Integration: create this type and set <c>host.TextInput = iosTextInput;</c> (after the game has
+/// started, on the UI thread). If inline display during composition (marked text) is needed, this can
+/// optionally be extended with an <c>IUITextInput</c> implementation.
 /// </summary>
 public sealed class IosTextInput : ITextInput
 {
@@ -51,7 +53,7 @@ public sealed class IosTextInput : ITextInput
     {
     }
 
-    /// <summary>Invisible key input view that streams confirmed characters/deletes to the Hamon core.</summary>
+    /// <summary>Invisible key input view that streams confirmed characters and deletes to the Hamon core.</summary>
     private sealed class KeyInputView : UIView, IUIKeyInput
     {
         private readonly HamonRoot _host;

@@ -3,9 +3,9 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Hamon runtime entry.
-/// Relayout only when size changes (no rebuilding/recalculation for steady frames).<see cref="Render"/>draw with
-/// (Drawing is<see cref="IPainter"/>Delegation to the backend = independent of engines such as MonoGame).
+/// Hamon runtime entry point. Relayouts only when size changes (no rebuild/recalculation in steady-state
+/// frames). Draw via <see cref="Render"/> (drawing is delegated to the backend through <see cref="IPainter"/>,
+/// keeping the core independent of engines such as MonoGame).
 /// </summary>
 public sealed class HamonRoot : IHamonHost, IDisposable
 {
@@ -54,8 +54,8 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Root entity of the app body (for testing/inspection).
-    /// <see cref="SetRoot"/>The result of build passed in.
+    /// Root entity of the app body (for testing/inspection): the result of the build function passed to
+    /// <see cref="SetRoot"/>.
     /// </summary>
     public Element? Root
     {
@@ -80,24 +80,26 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     /// <summary>Settings for gamepad button press and hold behavior (automatic repeat/long press).</summary>
     public GamepadHoldSettings Hold { get; } = new();
 
-    /// <summary>Default (light) UI style. <see cref="HamonTheme.Default"/>）。</summary>
+    /// <summary>Default (light) UI style; see <see cref="HamonTheme.Default"/>.</summary>
     public HamonTheme Theme { get; set; } = HamonTheme.Default;
 
     /// <summary>
-    /// Dark color scheme (opt-in).<c>null</c>It does not darken in any mode during<see cref="Theme"/>Use = game default.
-    /// example:<c>DarkTheme = HamonTheme.Dark</c>Enable dark mode in (Flutter<c>MaterialApp.darkTheme</c>equivalent).
+    /// Dark color scheme (opt-in). When <c>null</c>, <see cref="Theme"/> is used regardless of mode, so
+    /// nothing darkens automatically by default (the game default). Example: enable dark mode with
+    /// <c>DarkTheme = HamonTheme.Dark</c> (equivalent to Flutter's <c>MaterialApp.darkTheme</c>).
     /// </summary>
     public HamonTheme? DarkTheme { get; set; }
 
-    /// <summary>Theme selection mode (Flutter<c>themeMode</c>compliant). <see cref="Widgets.ThemeMode.System"/>. <see cref="DarkTheme"/>Always if unset<see cref="Theme"/>。</summary>
+    /// <summary>Theme selection mode (compliant with Flutter's <c>themeMode</c>); defaults to <see cref="Widgets.ThemeMode.System"/>. Always falls back to <see cref="Theme"/> if <see cref="DarkTheme"/> is unset.</summary>
     public ThemeMode ThemeMode { get; set; } = ThemeMode.System;
 
-    /// <summary>OS brightness in System mode (set by host integration; default in environments where OS dark settings cannot be set)<see cref="Brightness.Light"/>).</summary>
+    /// <summary>OS brightness in System mode (set by the host integration); defaults to <see cref="Brightness.Light"/> in environments where OS dark-mode settings are unavailable.</summary>
     public Brightness PlatformBrightness { get; set; } = Brightness.Light;
 
     /// <summary>
-    /// A theme that is actually applied.<see cref="ThemeMode"/>・<see cref="DarkTheme"/>・<see cref="PlatformBrightness"/>The result of solving.
-    /// Even if dark is required<see cref="DarkTheme"/>but<c>null</c>If<see cref="Theme"/>fallback to (opt-in).
+    /// The theme actually applied: the resolved result of <see cref="ThemeMode"/>, <see cref="DarkTheme"/>,
+    /// and <see cref="PlatformBrightness"/>. Even when dark mode is requested, this falls back to
+    /// <see cref="Theme"/> if <see cref="DarkTheme"/> is <c>null</c> (dark theming is opt-in).
     /// </summary>
     public HamonTheme EffectiveTheme
     {
@@ -113,17 +115,17 @@ public sealed class HamonRoot : IHamonHost, IDisposable
         }
     }
 
-    /// <summary>Shared element transition (<see cref="Hero"/>) tag-based registry.<see cref="Navigator"/>drives the flight.</summary>
+    /// <summary>Tag-based registry for shared element transitions (<see cref="Hero"/>); <see cref="Navigator"/> drives the flight.</summary>
     internal HeroRegistry Heroes { get; } = new();
 
     /// <summary>Drag and drop status (<see cref="Draggable{T}"/>/<see cref="DragTarget{T}"/>).</summary>
     internal DragController Drag { get; } = new();
 
     /// <summary>
-    /// Device pixel ratio (physical px ÷ logical pt).
-    /// The layout is logical pt (<see cref="Update(Size,float)"/>(available), and the drawing is scaled at this ratio and transferred to physical px, so
-    /// The text will be rasterized with this ratio and displayed clearly (<c>FontSize × ScaleY</c>).
-    /// Calculated and set by the backend from backbuffer/clientBounds.
+    /// Device pixel ratio (physical px / logical pt). Layout uses logical pt (as passed to the
+    /// <c>available</c> parameter of <see cref="Update(Size,float)"/>), and drawing is scaled by this ratio
+    /// when transferred to physical px, so text is rasterized at this ratio for crisp display
+    /// (<c>FontSize × ScaleY</c>). Calculated and set by the backend from the backbuffer/client bounds.
     /// </summary>
     public float DevicePixelRatio
     {
@@ -133,7 +135,7 @@ public sealed class HamonRoot : IHamonHost, IDisposable
 
     private float _devicePixelRatio = 1f;
 
-    /// <summary>Focus cursor (single overlay = moving animation + style).<see cref="FocusCursor.Enabled"/>Enable with .</summary>
+    /// <summary>Focus cursor (a single overlay with movement animation and style); enable via <see cref="FocusCursor.Enabled"/>.</summary>
     public FocusCursor Cursor { get; } = new();
 
     /// <summary><see cref="IHamonHost.CursorEnabled"/>: Suppresses the focus ring when the focus cursor is enabled.</summary>
@@ -146,12 +148,13 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     public IClipboard Clipboard { get; set; } = new InMemoryClipboard();
 
     /// <summary>
-    /// Destination for sound effects to be played (bridge to game audio. null = silence). <b>Just the trigger to ring</b>Provide:
-    /// Widget declarative sounds (<see cref="InteractionSounds"/>) or from the user state callback.<see cref="PlaySound"/>call.
+    /// Destination for playing sound effects (a bridge to game audio; null = silence). This
+    /// <b>only provides the trigger to play a sound</b>: call <see cref="PlaySound"/> from widget-declarative
+    /// sounds (<see cref="InteractionSounds"/>) or from user state callbacks.
     /// </summary>
     public ISoundPlayer? Sound { get; set; }
 
-    /// <summary><paramref name="sound"/>（<see cref="SoundId"/>・Play value type = no box). <see cref="Sound"/>No sound if not injected.</summary>
+    /// <summary>Plays <paramref name="sound"/> (a <see cref="SoundId"/> value type, so no boxing). No-op if <see cref="Sound"/> is not injected.</summary>
     public void PlaySound(SoundId? sound, float volume = 1f)
     {
         if (sound is SoundId id)
@@ -161,24 +164,24 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Exception catching bounds during build/layout/render (valid only when set).
-    /// Notify this handler without causing a crash and safely abort the frame (retry in the next frame).
+    /// Exception-catching boundary for build/layout/render (active only when set). Notifies this handler
+    /// instead of crashing, safely aborting the current frame (retried on the next frame).
     /// </summary>
     public Action<Exception>? OnError { get; set; }
 
     /// <summary>
-    /// Height of the soft keyboard that covers the bottom of the screen (px・0=hidden).
-    /// The application/layout can raise the content by this amount so that the focused field is not hidden (used as `SafeArea`).
+    /// Height of the soft keyboard covering the bottom of the screen (px; 0 = hidden).
+    /// The application/layout can raise its content by this amount so the focused field isn't hidden (used by <see cref="SafeArea"/>).
     /// </summary>
     public float SoftKeyboardHeight { get; set; }
 
     /// <summary>
-    /// Safe area inset (edge ​​margin/px hidden by notch/status bar/home indicator, etc.).
-    /// Mobile backend configures.<see cref="SafeArea"/>consumes this as inner margin.
+    /// Safe area insets (edge margins in px hidden by notch/status bar/home indicator, etc.).
+    /// Configured by the mobile backend; <see cref="SafeArea"/> consumes this as inner margin.
     /// </summary>
     public EdgeInsets SafeAreaInsets { get; set; }
 
-    /// <summary><see cref="IHamonHost.BeginTextInput"/>: Tells the IME to start inputting the focused field.</summary>
+    /// <summary><see cref="IHamonHost.BeginTextInput"/>: tells the IME to begin input for the focused field.</summary>
     public void BeginTextInput() => TextInput?.Start();
 
     /// <summary><see cref="IHamonHost.EndTextInput"/>: Informs the IME that input is complete.</summary>
@@ -199,9 +202,11 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Is the IME inputting (during conversion or a few frames immediately after confirming/cancelling)? <b>Suppress app key processing</b>should
-    /// (Direction keys = candidate selection, Enter = leave confirmation to IME, do not move focus/submit). <see cref="DispatchText"/>in
-    /// However, due to the frame order, the guard lasts for several frames.</summary>
+    /// Whether the IME is currently active (during conversion, or for a few frames immediately after
+    /// confirm/cancel). While true, <b>app key processing should be suppressed</b> (direction keys select IME
+    /// candidates, Enter confirms via the IME; do not move focus or submit). Because of frame ordering — e.g.
+    /// around <see cref="DispatchText"/> — the guard lasts for a few extra frames.
+    /// </summary>
     public bool IsImeActive => _imeComposing || _imeGuardFrames > 0;
 
     /// <summary>Current focus cursor rectangle (after animation interpolation, including margins). </summary>
@@ -211,22 +216,26 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     public State<T> CreateState<T>(T initial) => new(this, initial);
 
     /// <summary>
-    /// Create an animation driver linked to this route (<see cref="Update(Size, float)"/>forward with dt).
-    /// <see cref="Opacity"/>/<see cref="Transform"/>from<c>() =&gt; ctrl.Curved</c>If you read the animation when drawing without reconstruction.
+    /// Creates an animation driver linked to this root (advanced by dt via <see cref="Update(Size, float)"/>).
+    /// Read it from <see cref="Opacity"/>/<see cref="Transform"/> via <c>() =&gt; ctrl.Curved</c> at paint
+    /// time, without needing to rebuild.
     /// </summary>
     public AnimationController CreateAnimation(float durationSeconds, Curve? curve = null) => new(this, durationSeconds, curve);
 
     // --- 既定バインドで物理入力を処理する便宜入口（全自前なら下の直接APIを使う） ---
 
-    /// <summary>Process physical button press with default binding: Direction → Focus movement/Others → Deliver to focus + OK/Cancel.
-    /// Auto-repeat and long-press timing can also be started here (<see cref="Update(Size, float)"/>forward with dt).</summary>
+    /// <summary>
+    /// Processes a physical button press using the default binding: directional buttons move focus; other
+    /// buttons are delivered to the focused node plus OK/Cancel. Also starts auto-repeat/long-press timing
+    /// here (advanced by dt via <see cref="Update(Size, float)"/>).
+    /// </summary>
     public void HandleButtonDown(GamepadButton button)
     {
         StartHold(button);
         DispatchButtonDownDefault(button);
     }
 
-    /// <summary>Single delivery with default binding (shared on first press and repeat).</summary>
+    /// <summary>Delivers a single press using the default binding (shared by both the initial press and repeats).</summary>
     private void DispatchButtonDownDefault(GamepadButton button)
     {
         if (Bindings.Directional.TryGetValue(button, out FocusDirection direction))
@@ -335,7 +344,7 @@ public sealed class HamonRoot : IHamonHost, IDisposable
         }
     }
 
-    /// <summary>Deliver confirmed characters to the focused character (<c>TextField</c>etc.). </summary>
+    /// <summary>Deliver confirmed characters to the focused field (e.g. <c>TextField</c>).</summary>
     public void DispatchText(char character)
     {
         _imeComposing = false; // 確定（commit）または通常打鍵＝変換中ではない
@@ -349,10 +358,10 @@ public sealed class HamonRoot : IHamonHost, IDisposable
 
     public bool MoveFocus(FocusDirection direction) => Focus.MoveFocus(direction);
 
-    /// <summary>Next (Tab) in linear traversal. </summary>
+    /// <summary>Move to the next focus target using linear traversal (Tab).</summary>
     public bool MoveNext() => Focus.MoveNext();
 
-    /// <summary>Move forward with linear traversal (Shift+Tab).</summary>
+    /// <summary>Move to the previous focus target using linear traversal (Shift+Tab).</summary>
     public bool MovePrevious() => Focus.MovePrevious();
     public void DispatchButtonDown(GamepadButton button) => Focus.DispatchButtonDown(button);
     public void DispatchButtonUp(GamepadButton button) => Focus.DispatchButtonUp(button);
@@ -362,10 +371,11 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     public void Dismiss() => Focus.Dismiss();
 
     /// <summary>
-    /// Deliver pointer (touch/mouse).
-    /// Send to the same element. <see cref="FocusNode"/>Also shift the focus to (tap = focus).
-    /// Gesture arbitration: Even while capturing a tappable child, movement is<see cref="DragSlop"/>If exceeds in the main axis direction
-    /// Pass to ancestor scroll element, child operations are<see cref="PointerPhase.Cancel"/>Abort with (scroll vs. tap).
+    /// Delivers a pointer event (touch/mouse), routing subsequent events for the same pointer to the same
+    /// element. Also shifts focus to the element's <see cref="FocusNode"/> (tap = focus).
+    /// Gesture arbitration: even while a tappable child has captured the pointer, if movement exceeds
+    /// <see cref="DragSlop"/> along the main axis, delivery is handed off to the nearest ancestor scroll
+    /// element, and the child's operation is aborted with <see cref="PointerPhase.Cancel"/> (scroll vs. tap).
     /// </summary>
     public void DispatchPointer(PointerEvent pointer)
     {
@@ -504,8 +514,8 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Shipping wheel/trackpad scroll.<paramref name="position"/>To the nearest scroll element directly below
-    /// <paramref name="delta"/>Apply (px, positive = upward wheel) (return offset by delta).
+    /// Delivers wheel/trackpad scroll: applies <paramref name="delta"/> (px, positive = wheel up) to the
+    /// nearest scroll element directly below <paramref name="position"/>, offsetting it by that amount.
     /// </summary>
     public void DispatchScroll(Vec2 position, float delta)
     {
@@ -525,15 +535,17 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Foreground in hover<see cref="MouseRegion"/>The cursor shape presented by (if not<see cref="MouseCursor.Basic"/>）。
-    /// The backend reads each frame and copies it to the OS cursor.
+    /// The cursor shape presented by the frontmost hovered <see cref="MouseRegion"/> (or
+    /// <see cref="MouseCursor.Basic"/> if none). The backend reads this each frame and applies it to the OS
+    /// cursor.
     /// </summary>
     public MouseCursor CurrentCursor { get; private set; } = MouseCursor.Basic;
 
     /// <summary>
-    /// Deliver the hover position of the mouse (movement without pressing = called by backend mouse movement).
-    /// <paramref name="position"/>Directly below<see cref="MouseRegion"/>Recalculate the group and use the difference from the previous time to enter/exit.
-    /// Fires a hover over the ongoing region.<b>touch(<see cref="DispatchPointer"/>) is not called = hover is purely mouse-driven</b>。
+    /// Delivers the mouse hover position (movement without pressing; called on backend mouse-move events).
+    /// Recalculates the set of <see cref="MouseRegion"/> elements directly under <paramref name="position"/>
+    /// and uses the difference from the previous set to fire enter/exit, plus hover for regions that remain
+    /// active. <b>Not called for touch (<see cref="DispatchPointer"/>) — hover is purely mouse-driven</b>.
     /// </summary>
     public void DispatchHover(Vec2 position)
     {
@@ -555,7 +567,7 @@ public sealed class HamonRoot : IHamonHost, IDisposable
         CurrentCursor = MouseCursor.Basic;
     }
 
-    /// <summary><see cref="IHoverTarget"/>If it is unmounted while hovering, it guarantees exit and removes it from tracking.</summary>
+    /// <summary>If an <see cref="IHoverTarget"/> is unmounted while hovering, this guarantees an exit call and removes it from tracking.</summary>
     internal void NotifyHoverTargetUnmounted(IHoverTarget target)
     {
         int index = _hovered.IndexOf(target);
@@ -609,8 +621,10 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// <paramref name="position"/>Direct hover target<see cref="MouseRegionElement"/>Collect front-to-back.
-    /// Return value true = This subtree occluded the hover behind it (opaque area or pointer-receiving element).<paramref name="acc"/>are stacked in the order that the front is the last.
+    /// Collects the <see cref="MouseRegionElement"/> hover targets directly under <paramref name="position"/>,
+    /// front-to-back. A return value of true means this subtree occluded the hover behind it (an opaque
+    /// region or a pointer-receiving element). Results are appended to <paramref name="acc"/> so that the
+    /// frontmost element ends up last.
     /// </summary>
     private static bool CollectHover(Element element, Vec2 position, List<IHoverTarget> acc)
     {
@@ -643,7 +657,7 @@ public sealed class HamonRoot : IHamonHost, IDisposable
         return occluded || element.WantsPointer;
     }
 
-    /// <summary>Adopts the cursor in the top (frontmost) area of ​​the hover set.</summary>
+    /// <summary>Adopts the cursor of the topmost (frontmost) region in the hover set.</summary>
     private void RefreshCursor()
     {
         // _hovered は背後→最前面の順に積まれている＝末尾が最前面。
@@ -706,10 +720,13 @@ public sealed class HamonRoot : IHamonHost, IDisposable
         HitTest(element, position, Transform2D.Identity, out _);
 
     /// <summary>
-    /// <paramref name="position"/>(Root = device/UI coordinates) Returns the element that receives the frontmost pointer immediately below.<paramref name="acc"/>teeth
-    /// Cumulative transformation from "root → current element's coordinate space", when descending, the element's<see cref="Element.ChildHitTestTransform"/>synthesize
-    /// （<see cref="InteractiveViewer"/>The hit detection matches the display even under scaling/parallel movement such as).<paramref name="hitLocal"/>for
-    /// Returns the cumulative transformation up to the hit element (=transformation that copies the pointer position locally at the time of delivery).
+    /// Given <paramref name="position"/> (in root = device/UI coordinates), returns the frontmost element
+    /// that receives the pointer directly below it. <paramref name="acc"/> is the cumulative transformation
+    /// from "root to current element's coordinate space"; when descending, it composes the element's
+    /// <see cref="Element.ChildHitTestTransform"/> (so hit detection matches the display even under
+    /// scaling/translation, such as in <see cref="InteractiveViewer"/>). <paramref name="hitLocal"/> returns
+    /// the cumulative transformation up to the hit element (i.e. the transform used to map the pointer
+    /// position into local coordinates when delivering the event).
     /// </summary>
     private static Element? HitTest(Element element, Vec2 position, Transform2D acc, out Transform2D hitLocal)
     {
@@ -761,16 +778,17 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Load the front overlay (modal/bottom sheet/pop-up, etc.).<paramref name="build"/>teeth
-    /// Since it is placed in full screen size, internally scrim +<c>Center</c>/<c>Positioned</c>、<c>FocusScope</c>etc.
-    /// return value<see cref="OverlayEntry"/>of<see cref="RemoveOverlay"/>and close it.
+    /// Pushes a foreground overlay (modal/bottom sheet/pop-up, etc.). <paramref name="build"/> is placed at
+    /// full-screen size, so build the scrim plus <c>Center</c>/<c>Positioned</c>/<c>FocusScope</c>, etc.,
+    /// internally. Close it via <see cref="RemoveOverlay"/> using the returned <see cref="OverlayEntry"/>.
     /// </summary>
     public OverlayEntry PushOverlay(Func<Widget> build) => PushOverlay(build, 0f);
 
     /// <summary>
-    /// Stack overlays with entry and exit animations.<paramref name="transitionDuration"/>When >0, open =
-    /// <paramref name="transition"/>(default<see cref="RouteTransitions.FadeScale"/>) to enter,<see cref="RemoveOverlay"/>The time is
-    /// <b>Make use of partial trees until the exit animation is completed</b>.
+    /// Stacks an overlay with entry and exit animations. When <paramref name="transitionDuration"/> > 0,
+    /// opening uses <paramref name="transition"/> (default <see cref="RouteTransitions.FadeScale"/>) to
+    /// animate in; when <see cref="RemoveOverlay"/> is called, <b>the subtree is kept alive until the exit
+    /// animation completes</b>.
     /// </summary>
     public OverlayEntry PushOverlay(Func<Widget> build, float transitionDuration, RouteTransition? transition = null, Curve? curve = null)
     {
@@ -788,9 +806,10 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Build an overlay with a builder that receives entry/exit progress (0 → 1).
-    /// <b>Separate mapping of progress for each part</b>The modal you want (<c>ShowDialog</c>/<c>ShowBottomSheet</c>)for.
-    /// <see cref="RemoveOverlay"/>(Keep it alive until the exit animation is completed) is in charge.<paramref name="transitionDuration"/>If it is 0, progress is always 1.
+    /// Builds an overlay with a builder that receives entry/exit progress (0 to 1), for modals that want
+    /// <b>different progress mappings for different parts</b> (e.g. <c>ShowDialog</c>/<c>ShowBottomSheet</c>).
+    /// <see cref="RemoveOverlay"/> is responsible for keeping the overlay alive until the exit animation
+    /// completes. If <paramref name="transitionDuration"/> is 0, progress is always 1.
     /// </summary>
     public OverlayEntry PushOverlay(Func<Func<float>, Widget> animatedBuild, float transitionDuration, Curve? curve = null)
     {
@@ -810,7 +829,7 @@ public sealed class HamonRoot : IHamonHost, IDisposable
         return entry;
     }
 
-    /// <summary>Close overlay (loaded<see cref="OverlayEntry"/>). </summary>
+    /// <summary>Closes the overlay (the pushed <see cref="OverlayEntry"/>).</summary>
     public void RemoveOverlay(OverlayEntry entry)
     {
         if (entry.Exiting)
@@ -860,8 +879,9 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     public void Invalidate() => _dirty = true;
 
     /// <summary>
-    /// Transfer processing from another thread (Task continuation, etc.) to the UI thread. <see cref="Update(Size, float)"/>at the beginning of
-    /// executed on the main thread (async atom/<c>UseAsync</c>(used to reflect completion).
+    /// Transfers work from another thread (Task continuation, etc.) onto the UI thread, executed on the main
+    /// thread at the start of <see cref="Update(Size, float)"/> (used by async atoms/<c>UseAsync</c> to
+    /// reflect completion).
     /// </summary>
     public void Post(Action action)
     {
@@ -895,10 +915,10 @@ public sealed class HamonRoot : IHamonHost, IDisposable
 
     private readonly AtomStore _atoms = new();
 
-    /// <summary>Global atom store (<see cref="StoreProvider"/>default when out of office).</summary>
+    /// <summary>Global atom store (the default used outside any <see cref="StoreProvider"/> scope).</summary>
     public AtomStore GlobalStore => _atoms;
 
-    /// <summary><see cref="Provider{T}"/>Search the scope chain for value overrides by (if not, null).</summary>
+    /// <summary>Searches the scope chain for a value override registered via <see cref="Provider{T}"/> (null if none).</summary>
     internal static AtomCell? FindOverride(AtomScope? scope, object atom)
     {
         for (AtomScope? s = scope; s is not null; s = s.Parent)
@@ -915,15 +935,15 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     /// <summary>Read global value of atom (derivation is computation; imperative access outside hooks).</summary>
     public T ReadAtom<T>(Atom<T> atom) => (T)_atoms.Read(atom)!;
 
-    /// <summary>Update global value of atom (bidirectional/write atom executes write expression/rebuilds only subscribers).</summary>
+    /// <summary>Updates the global value of an atom (for bidirectional/write atoms, executes the write expression); rebuilds only subscribers.</summary>
     public void WriteAtom<T>(Atom<T> atom, T value) => _atoms.Set(atom, value);
 
-    /// <summary>Return the global value of atom to its initial value (equivalent to jotai RESET).</summary>
+    /// <summary>Resets the global value of an atom to its initial value (equivalent to jotai's RESET).</summary>
     public void ResetAtom<T>(Atom<T> atom) => _atoms.Reset(atom);
 
     public void MarkDirty() => _dirty = true;
 
-    /// <summary>Reconstruct only specific entities in the next frame (avoid whole tree reconcile =<see cref="Bind{T}"/>etc.).</summary>
+    /// <summary>Rebuilds only specific elements on the next frame, avoiding a full-tree reconcile (used by <see cref="Bind{T}"/>, etc.).</summary>
     public void MarkElementDirty(Element element)
     {
         if (!_dirtyElements.Contains(element))
@@ -933,9 +953,10 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Combine the app main body and overlays into a full-screen Stack (z order = last wins in both painting and hit testing).
-    /// Always wraps even if there is no overlay = the root type is stable, and the application subtree can be modified by modal opening/closing.
-    /// You can maintain the state (focus/scroll, etc.) without having to recreate it.
+    /// Combines the app body and overlays into a full-screen Stack (z-order: later wins for both painting
+    /// and hit testing). Always wraps, even with no overlays, so the root type stays stable; opening/closing
+    /// a modal does not recreate the application subtree, so its state (focus/scroll, etc.) is preserved
+    /// without needing to be rebuilt.
     /// </summary>
     private Widget BuildEffectiveRoot()
     {
@@ -956,8 +977,9 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Rebuild if dirty, re-layout if size changes. <paramref name="dtSeconds"/>If you pass
-    /// Advances the internal clock and prevents inertia flings, etc.<see cref="ITicker"/>move forward (movement becomes dirty and re-layout).
+    /// Rebuilds if dirty and re-lays-out if the size changed. If <paramref name="dtSeconds"/> is passed,
+    /// advances the internal clock and steps inertia flings, etc., via <see cref="ITicker"/> (motion marks
+    /// the affected elements dirty and triggers re-layout).
     /// </summary>
     public void Update(Size available, float dtSeconds = 0f)
     {
@@ -1056,7 +1078,7 @@ public sealed class HamonRoot : IHamonHost, IDisposable
         }
     }
 
-    /// <summary>Detects a focus change and slides the cursor from the current location to the new frame (if it is the same node, it follows the raw frame).</summary>
+    /// <summary>Detects a focus change and slides the cursor from its current position to the new frame (if the focused node is unchanged, it simply follows the raw frame).</summary>
     private void UpdateFocusCursor()
     {
         _cursorAnim ??= new AnimationController(this, Cursor.GlideDuration, Cursor.Curve);
@@ -1144,8 +1166,9 @@ public sealed class HamonRoot : IHamonHost, IDisposable
     }
 
     /// <summary>
-    /// Draw the tree to the drawing backend.<paramref name="painter"/>between BeginFrame/EndFrame and set the focus cursor to
-    /// Lay it on top. <see cref="IPainter"/>Responsible for implementation (core is engine independent).
+    /// Draws the tree to the rendering backend, between <paramref name="painter"/>'s BeginFrame/EndFrame, and
+    /// layers the focus cursor on top. The backend implementation is responsible for <see cref="IPainter"/>
+    /// (the core stays engine-independent).
     /// </summary>
     public void Render(IPainter painter)
     {
@@ -1197,8 +1220,8 @@ public sealed class HamonRoot : IHamonHost, IDisposable
 }
 
 /// <summary>
-/// Identifier of the topmost stacked overlay (<see cref="HamonRoot.PushOverlay"/>return value).
-/// Also serves as a stable identity (Key) for reconcile,<see cref="HamonRoot.RemoveOverlay"/>and close it.
+/// Identifier for a stacked overlay (the return value of <see cref="HamonRoot.PushOverlay"/>). Also serves as
+/// a stable identity (Key) for reconcile. Close it via <see cref="HamonRoot.RemoveOverlay"/>.
 /// </summary>
 public sealed class OverlayEntry
 {
@@ -1211,7 +1234,7 @@ public sealed class OverlayEntry
         Transition = transition;
     }
 
-    /// <summary>Driver of entry/exit progress (<see cref="HamonRoot.PushOverlay(Func{Widget}, float, RouteTransition?, Curve?)"/>(only when specifying a transition).</summary>
+    /// <summary>Driver of entry/exit progress (only present when a transition is specified via <see cref="HamonRoot.PushOverlay(Func{Widget}, float, RouteTransition?, Curve?)"/>).</summary>
     internal AnimationController? Anim { get; }
 
     internal RouteTransition? Transition { get; }
@@ -1222,7 +1245,7 @@ public sealed class OverlayEntry
     internal Widget Build() => _build();
 }
 
-/// <summary>Transparent wrapper that holds one layer of overlay (reconciliate stabilized with Key, no layout box added).</summary>
+/// <summary>Transparent wrapper that holds one overlay layer (reconcile is stabilized via Key; adds no layout box).</summary>
 internal sealed class OverlayHost : StatelessWidget
 {
     public OverlayHost(OverlayEntry entry) => Entry = entry;
@@ -1235,7 +1258,8 @@ internal sealed class OverlayHost : StatelessWidget
 }
 
 /// <summary>
-/// reactive state. <see cref="HamonRoot"/>is made dirty and rebuilt in the next frame.
+/// Reactive state; setting its value marks the owning <see cref="HamonRoot"/> dirty so it rebuilds on the
+/// next frame.
 /// </summary>
 public sealed class State<T>
 {

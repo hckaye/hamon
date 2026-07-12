@@ -3,10 +3,11 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Buttons that can be pressed (tap = pointer / OK = compatible with both gamepad and keyboard).
-/// Material Design style<b>state layer</b>Give Feedback: Focus and Press<b>Color, not frame</b>Expressed as
-/// The overlapping color becomes darker while the button is pressed (clicks are easier to see).
-/// To cross the focus state<see cref="Node"/>is retained by the caller (not recreated by rebuilding).
+/// A button that can be pressed (tap via pointer, or activate via OK on gamepad/keyboard).
+/// Feedback is expressed using the Material Design <b>state layer</b> pattern: focus and press are
+/// conveyed by overlay <b>color</b>, not by a border. The overlay color darkens while the button is
+/// pressed, making the click easier to see. To preserve focus state across rebuilds, <see cref="Node"/>
+/// should be retained by the caller rather than recreated each time.
 /// </summary>
 public sealed class Button : Widget, IRenderConfig
 {
@@ -14,7 +15,7 @@ public sealed class Button : Widget, IRenderConfig
 
     public Action? OnPressed { get; init; }
 
-    /// <summary>Background color (unspecified = transparent = text button. State layer appears in Primary color).</summary>
+    /// <summary>Background color (unspecified = transparent, i.e. a text button; the state layer then appears in the theme's primary color).</summary>
     public Color? Background { get; init; }
 
     public EdgeInsets Padding { get; init; }
@@ -23,46 +24,49 @@ public sealed class Button : Widget, IRenderConfig
 
     public bool Autofocus { get; init; }
 
-    /// <summary>Corner rounding radius (px, theme default if not specified)<see cref="HamonTheme.Radius"/>）。</summary>
+    /// <summary>Corner radius in pixels (falls back to the theme default, <see cref="HamonTheme.Radius"/>, if not specified).</summary>
     public float? Radius { get; init; }
 
-    /// <summary>Is it operable (false = ignores input and displays in gray color; does not receive activation from pointer/keyboard/gamepad).</summary>
+    /// <summary>Whether the button is operable (false = ignores input, is displayed dimmed, and does not receive activation from pointer/keyboard/gamepad).</summary>
     public bool Enabled { get; init; } = true;
 
     /// <summary>
-    /// Is it included in focus traversal even when disabled (default false = excluded like Flutter)?
-    /// If it is true, the focus will be on, but it will not be activated (used to indicate "disabled but still there" in accessibility).
+    /// Whether the button is included in focus traversal even when disabled (default false, matching
+    /// Flutter's behavior of excluding it). When true, the button can still receive focus but will not
+    /// activate, which is useful for indicating "disabled but still present" for accessibility.
     /// </summary>
     public bool FocusableWhenDisabled { get; init; }
 
-    /// <summary>Explicitly specify the background color when disabled (unspecified = normal background + theme light color opacity).</summary>
+    /// <summary>Explicitly specifies the background color when disabled (if unspecified, the normal background is used with the theme's disabled opacity applied).</summary>
     public Color? DisabledBackground { get; init; }
 
-    /// <summary>Cursor to present while hovering (default = clickable).<see cref="ButtonStyle.MouseCursor"/>If so, give priority to that.</summary>
+    /// <summary>Cursor to show while hovering (default = clickable). If <see cref="ButtonStyle.MouseCursor"/> is specified, it takes priority.</summary>
     public MouseCursor Cursor { get; init; } = MouseCursor.Click;
 
-    /// <summary>Accessibility label (read by screen readers; if not specified, child text will be filled in by the consumer).</summary>
+    /// <summary>Accessibility label read by screen readers (if not specified, the consumer fills it in from the child's text).</summary>
     public string? SemanticLabel { get; init; }
 
-    /// <summary>Appearance by state (Flutter<c>ButtonStyle</c>). </summary>
+    /// <summary>Appearance by state (equivalent to Flutter's <c>ButtonStyle</c>).</summary>
     public ButtonStyle? Style { get; init; }
 
     /// <summary>
-    /// situation(<see cref="WidgetState"/>) according to<b>Assemble the entire look</b>Builder (Hamon's own escape hatch).
-    /// If specified, the default drawing of the background/state layer/frame will not be performed, and only the output of this builder will be drawn = complete control by the user.
-    /// Standard usage is<see cref="Style"/>(Flutter compliant) is sufficient, and only use this when you want a special look.
+    /// Builder that <b>assembles the entire look</b> based on the current <see cref="WidgetState"/> (a Hamon-specific
+    /// escape hatch). When specified, the default background/state-layer/border drawing is skipped, and only this
+    /// builder's output is drawn, giving the user complete control. For standard usage, <see cref="Style"/>
+    /// (Flutter-compliant) is sufficient; use this only when a special appearance is needed.
     /// </summary>
     public Func<WidgetState, Widget>? Builder { get; init; }
 
     /// <summary>
-    /// Every time the state (hover/pressed/focused/disabled) changes<b>call in new state</b>Callback (for games).
-    /// Sound effects can be played and retained by the user.<see cref="AnimationController"/>driving (squash/glow/sprite etc.)
-    /// Custom animation). <see cref="Builder"/>, the classic scale/opacity transition is
-    /// <see cref="ButtonStyle.Animation"/>（<see cref="ButtonAnimationStyle"/>).
+    /// Callback invoked with the new state every time the state (hover/pressed/focused/disabled)
+    /// changes (intended for games). The user can play sound effects, or drive a retained
+    /// <see cref="AnimationController"/> for custom animations (squash/glow/sprite, etc.), typically in
+    /// combination with <see cref="Builder"/>. For the classic scale/opacity transition, use
+    /// <see cref="ButtonStyle.Animation"/> (<see cref="ButtonAnimationStyle"/>) instead.
     /// </summary>
     public Action<WidgetState>? OnStateChanged { get; init; }
 
-    /// <summary>Sound effects (hover/press) linked to interactions.<see cref="HamonRoot.Sound"/>Play via (silent/declarative if not injected).</summary>
+    /// <summary>Sound effects (hover/press) linked to interactions. Played via <see cref="HamonRoot.Sound"/> (silent/no-op if not injected).</summary>
     public InteractionSounds Sounds { get; init; }
 
     // 基底状態（無効/有効）でレイアウト用の値を解決する（hover/focus による padding 変化はレイアウトを揺らすため基底で固定）。
@@ -109,8 +113,9 @@ public sealed class Button : Widget, IRenderConfig
     public override Element CreateElement() => new ButtonElement(this);
 
     /// <summary>
-    /// A simple helper that creates styles from frequently used constant values ​​(Flutter<c>ButtonStyle.styleFrom</c>equivalent).
-    /// Common to all states (<see cref="WidgetStateProperty{T}.All"/>). <see cref="ButtonStyle"/>Assemble directly.
+    /// A simple helper that builds a style from commonly used constant values (equivalent to Flutter's
+    /// <c>ButtonStyle.styleFrom</c>). Values are applied to all states via <see cref="WidgetStateProperty{T}.All"/>
+    /// and assembled directly into a <see cref="ButtonStyle"/>.
     /// </summary>
     public static ButtonStyle StyleFrom(
         Color? background = null,
@@ -140,8 +145,9 @@ public sealed class Button : Widget, IRenderConfig
 }
 
 /// <summary>
-/// <see cref="Button"/>holding entity. <see cref="RenderElement"/>Focus registration, press detection,
-/// Responsible for drawing and animation of the state layer (expressing focus/pressed with color).<see cref="ITicker"/>to create a smooth transition between overlapping colors.
+/// The <see cref="RenderElement"/> that holds a <see cref="Button"/>. Responsible for focus registration,
+/// press detection, and drawing/animating the state layer (expressing focus/pressed via color). Implements
+/// <see cref="ITicker"/> to create a smooth transition between overlay colors.
 /// </summary>
 internal sealed class ButtonElement : RenderElement, ITicker, IHoverTarget
 {
@@ -171,7 +177,7 @@ internal sealed class ButtonElement : RenderElement, ITicker, IHoverTarget
     {
     }
 
-    /// <summary>Current state flag (hover/focus/pressed/disabled). </summary>
+    /// <summary>Computes the current state flags (hover/focus/pressed/disabled).</summary>
     private WidgetState CurrentState()
     {
         if (!W.Enabled)
@@ -215,7 +221,7 @@ internal sealed class ButtonElement : RenderElement, ITicker, IHoverTarget
 
     private Button W => (Button)Widget;
 
-    /// <summary>Is it focusable (enabled or disabled but still included in traversal)?</summary>
+    /// <summary>Whether the button is focusable (enabled, or disabled but still included in traversal).</summary>
     private bool CanFocus => W.Enabled || W.FocusableWhenDisabled;
 
     public override void Mount(Element? parent, BuildContext context)

@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>How to fit textures into boxes (Flutter<c>BoxFit</c>(minimum version).</summary>
+/// <summary>How to fit a texture into a box (a minimal version of Flutter's <c>BoxFit</c>).</summary>
 public enum BoxFit : byte
 {
     /// <summary>Stretch it to fill the box (ignoring aspect ratio).</summary>
@@ -19,9 +19,10 @@ public enum BoxFit : byte
 }
 
 /// <summary>
-/// Draw textures (icons/images/sprites) (Flutter<c>Image</c>）。<see cref="Source"/>in the sprite sheet
-/// specify the part,<see cref="Fit"/>How to store it in<see cref="Tint"/>Color multiplication with. <see cref="Width"/>/<see cref="Height"/>、
-/// If not specified, the original size of the source.<see cref="Texture"/>If is null, nothing is drawn (layout only).
+/// Draws a texture (icon/image/sprite), equivalent to Flutter's <c>Image</c>. Use <see cref="Source"/> to specify a
+/// region within a sprite sheet, <see cref="Fit"/> for how it is fit into the box, and <see cref="Tint"/> for a
+/// color multiply. If <see cref="Width"/>/<see cref="Height"/> are not specified, the source's original size is
+/// used. If <see cref="Texture"/> is null, nothing is drawn (layout only).
 /// </summary>
 public sealed class Image : Widget
 {
@@ -41,7 +42,7 @@ public sealed class Image : Widget
     public override Element CreateElement() => new ImageElement(this);
 }
 
-/// <summary><see cref="Image"/>holding entity. <see cref="BoxFit"/>Draw according to the following.</summary>
+/// <summary>The holding entity for <see cref="Image"/>. Draws according to <see cref="BoxFit"/>.</summary>
 internal sealed class ImageElement : Element
 {
     private readonly LayoutNode _node;
@@ -117,8 +118,9 @@ internal sealed class ImageElement : Element
 }
 
 /// <summary>
-/// A panel that draws texture with 9-slices (9-patch) (corners are original size, sides are stretchable, and center is both stretchable).
-/// on the window/button background.<see cref="Border"/>is the texture frame width (px) and the inner margin of the content.<see cref="Child"/>is inside.
+/// A panel that draws a texture as a 9-slice (9-patch): corners keep their original size, the edges stretch along
+/// one axis, and the center stretches along both axes. Used for window/button backgrounds. <see cref="Border"/> is
+/// both the texture's frame width (px) and the content's inner margin. <see cref="Child"/> is placed inside.
 /// </summary>
 public sealed class NineSlice : Widget, IRenderConfig
 {
@@ -151,7 +153,7 @@ public sealed class NineSlice : Widget, IRenderConfig
     public override Element CreateElement() => new NineSliceElement(this);
 }
 
-/// <summary><see cref="NineSlice"/>holding entity. </summary>
+/// <summary>The holding entity for <see cref="NineSlice"/>.</summary>
 internal sealed class NineSliceElement : RenderElement
 {
     public NineSliceElement(NineSlice widget)

@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Hamon.MonoGame;
 
-/// <summary><see cref="ITexture"/>MonoGame implementation of (<see cref="Texture2D"/>thin trumpet). </summary>
+/// <summary><see cref="ITexture"/> implementation for MonoGame (a thin wrapper around <see cref="Texture2D"/>).</summary>
 public sealed class MonoGameTexture : ITexture
 {
     public MonoGameTexture(Texture2D texture) => Texture = texture;

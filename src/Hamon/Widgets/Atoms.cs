@@ -3,9 +3,9 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Unit of reactive state (equivalent to atom in jotai).<b>primitive</b>(initial value) or<b>derivative</b>(calculated from other atoms).
-/// The value is<see cref="HamonRoot"/>global store, or<see cref="StoreProvider"/>A separate store holds the
-/// <c>Hooks.Watch/UseAtom</c>Subscribe and update at.
+/// A unit of reactive state (equivalent to an atom in jotai) — either <b>primitive</b> (has an initial value) or
+/// <b>derived</b> (computed from other atoms). Its value is held in <see cref="HamonRoot"/>'s global store, or in
+/// a separate store provided by <see cref="StoreProvider"/>. Subscribe to and update it via <c>Hooks.Watch/UseAtom</c>.
 /// </summary>
 public sealed class Atom<T>
 {
@@ -15,33 +15,33 @@ public sealed class Atom<T>
     /// <summary>Derived atom (calculated/read only from other atoms. Automatically recalculated on dependent changes).</summary>
     public Atom(Func<AtomGetter, T> compute) => Compute = compute;
 
-    /// <summary>Bidirectional derived atom (similar to jotai:<paramref name="read"/>Calculate with,<paramref name="write"/>(update other atoms).</summary>
+    /// <summary>A bidirectional derived atom (similar to jotai): computed via <paramref name="read"/>, and updates other atoms via <paramref name="write"/>.</summary>
     public Atom(Func<AtomGetter, T> read, Action<AtomWriter, T> write)
     {
         Compute = read;
         Write = write;
     }
 
-    /// <summary>write-only (action) atom (jotai's<c>atom(null, (get,set,arg)=>…)</c>equivalent). </summary>
+    /// <summary>A write-only (action) atom (equivalent to jotai's <c>atom(null, (get,set,arg)=>…)</c>).</summary>
     public Atom(Action<AtomWriter, T> write) => Write = write;
 
     internal T Initial { get; } = default!;
 
     internal Func<AtomGetter, T>? Compute { get; }
 
-    /// <summary>Write type (bidirectional/write only atom). <see cref="AtomWriter"/>Update other atoms via.</summary>
+    /// <summary>The write function for a bidirectional/write-only atom. Updates other atoms via <see cref="AtomWriter"/>.</summary>
     internal Action<AtomWriter, T>? Write { get; }
 
     /// <summary>
-    /// Subscription lifecycle (jotai<c>atom.onMount</c>).
-    /// The return value is cleanup (called when the last subscriber is removed).
+    /// Subscription lifecycle hook (equivalent to jotai's <c>atom.onMount</c>).
+    /// The return value is a cleanup callback, invoked when the last subscriber is removed.
     /// </summary>
     public Func<Action<T>, Action?>? OnMount { get; init; }
 
     internal bool IsDerived => Compute is not null;
 }
 
-/// <summary>Dependent leader passed to the derived atom calculation formula.<see cref="Get{U}"/>The atom read in is registered as a dependency.</summary>
+/// <summary>Dependency tracker passed to a derived atom's compute function. Atoms read via <see cref="Get{U}"/> are registered as dependencies.</summary>
 public sealed class AtomGetter
 {
     private readonly AtomStore _store;
@@ -74,7 +74,7 @@ public sealed class AtomWriter
     public void Reset<U>(Atom<U> atom) => _store.Reset(atom);
 }
 
-/// <summary>1 atom value and subscribers (change notifications). <see cref="Provider{T}"/>Shared by scope.</summary>
+/// <summary>An atom's value and its subscribers (for change notifications). Shared per scope via <see cref="Provider{T}"/>.</summary>
 public sealed class AtomCell
 {
     private Action? _listeners;
@@ -84,7 +84,7 @@ public sealed class AtomCell
 
     internal bool HasValue { get; set; }
 
-    /// <summary>onMount Has it been wired (to prevent duplicate wiring)?</summary>
+    /// <summary>Whether onMount has already been wired (prevents wiring it more than once).</summary>
     internal bool OnMountWired { get; set; }
 
     /// <summary>Called (atom onMount) when the first subscriber is added (0 → 1).</summary>
@@ -113,13 +113,14 @@ public sealed class AtomCell
 
     internal void Notify() => _listeners?.Invoke();
 
-    /// <summary>Number of subscribers (missing unsubscriptions = for leak detection/inspection/testing).</summary>
+    /// <summary>Number of subscribers (useful for detecting missing unsubscriptions — leak detection, inspection, and testing).</summary>
     internal int ListenerCount => _count;
 }
 
 /// <summary>
-/// atom→cell store.<see cref="HamonRoot"/>global default, or<see cref="StoreProvider"/>Separate store.
-/// Derived atoms are lazily calculated and cached, and automatically recalculated when dependent changes (notification only when changes = propagation downstream).
+/// An atom→cell store. The default is <see cref="HamonRoot"/>'s global store, or a separate store from
+/// <see cref="StoreProvider"/>. Derived atoms are computed lazily and cached, and automatically recomputed when a
+/// dependency changes (downstream listeners are notified only when the value actually changes).
 /// </summary>
 public sealed class AtomStore
 {
@@ -169,7 +170,7 @@ public sealed class AtomStore
         return cell.HasValue ? cell.Value : atom.Initial;
     }
 
-    /// <summary>Updated atom. </summary>
+    /// <summary>Updates the atom's value.</summary>
     public void Set<T>(Atom<T> atom, T value)
     {
         if (atom.Write is not null)
@@ -184,7 +185,7 @@ public sealed class AtomStore
         cell.Notify();
     }
 
-    /// <summary>Return atom to its initial value (equivalent to jotai's RESET). </summary>
+    /// <summary>Resets the atom to its initial value (equivalent to jotai's RESET).</summary>
     public void Reset<T>(Atom<T> atom)
     {
         AtomCell cell = Cell(atom);
@@ -193,7 +194,7 @@ public sealed class AtomStore
         cell.Notify();
     }
 
-    /// <summary>Initial seed (<see cref="StoreProvider"/>initialValues ​​). </summary>
+    /// <summary>Seeds an initial value (used by <see cref="StoreProvider"/>'s initialValues).</summary>
     public void Seed<T>(Atom<T> atom, T value)
     {
         AtomCell cell = Cell(atom);
@@ -236,7 +237,7 @@ public sealed class AtomStore
     }
 }
 
-/// <summary><see cref="Provider{T}"/>The scope of overwriting the atom value that extends to the subtree (1 node = 1 atom). </summary>
+/// <summary>The scope, established by <see cref="Provider{T}"/>, that overrides an atom's value for a subtree (one node = one atom).</summary>
 internal sealed class AtomScope
 {
     public AtomScope(AtomScope? parent, object atom, AtomCell cell)
@@ -254,9 +255,10 @@ internal sealed class AtomScope
 }
 
 /// <summary>
-/// for subtrees<see cref="Atom"/>**Override** the value of (Flutter<c>InheritedWidget</c>/Provider-like "value plug-in").
-/// of descendants<c>Watch/UseAtom</c>sees cells in this scope (overridden by nesting).
-/// *jotai's "store boundary (independent separation of all atoms)" is<see cref="StoreProvider"/>For those of you.
+/// **Overrides** the value of an <see cref="Atom{T}"/> for a subtree (similar to Flutter's <c>InheritedWidget</c> or
+/// a Provider-style value override). Descendants using <c>Watch/UseAtom</c> see the cell overridden by this scope
+/// (nested providers override further). Note: jotai's "store boundary" — a fully independent separation of all
+/// atoms — is instead provided by <see cref="StoreProvider"/>.
 /// </summary>
 public sealed class Provider<T> : Widget
 {
@@ -270,22 +272,23 @@ public sealed class Provider<T> : Widget
 }
 
 /// <summary>
-/// into a subtree<b>independent atom store</b>to stretch (jotai)<c>Provider</c>equivalent store boundaries). <c>Watch/UseAtom</c>teeth
-/// Using this separate store, all atoms have values ​​that are independent of the global and external values ​​(for state isolation and testing on a screen/modal basis).
+/// Establishes an <b>independent atom store</b> for a subtree (equivalent to jotai's <c>Provider</c> store
+/// boundary). Within it, <c>Watch/UseAtom</c> uses this separate store, so all atoms have values independent
+/// from the global store and any outer scope (useful for state isolation and testing on a per-screen/per-modal basis).
 /// </summary>
 public sealed class StoreProvider : Widget
 {
     public Widget? Child { get; init; }
 
-    /// <summary>Isolated store initial seed (jotai's<c>initialValues</c>equivalent). <c>s =&gt; s.Seed(atom, 5)</c>. </summary>
+    /// <summary>Initial seed data for the isolated store (equivalent to jotai's <c>initialValues</c>). For example: <c>s =&gt; s.Seed(atom, 5)</c>.</summary>
     public Action<AtomStore>? InitialValues { get; init; }
 
     public override Element CreateElement() => new StoreProviderElement(this);
 }
 
 /// <summary>
-/// Generating and caching atoms with parameters (jotai<c>atomFamily</c>equivalent). <typeparamref name="TKey"/>for
-/// same<see cref="Atom{T}"/>(e.g. state by entity id).
+/// Creates and caches parameterized atoms (equivalent to jotai's <c>atomFamily</c>). Returns the same
+/// <see cref="Atom{T}"/> for the same <typeparamref name="TKey"/> (e.g. per-entity state keyed by id).
 /// </summary>
 public sealed class AtomFamily<TKey, T>
     where TKey : notnull
@@ -313,7 +316,7 @@ public sealed class AtomFamily<TKey, T>
     public void Remove(TKey key) => _cache.Remove(key);
 }
 
-/// <summary><see cref="StoreProvider"/>holding entity. </summary>
+/// <summary>The Element that hosts a <see cref="StoreProvider"/>.</summary>
 internal sealed class StoreProviderElement : Element
 {
     private readonly LayoutNode _node;
@@ -376,7 +379,7 @@ internal sealed class StoreProviderElement : Element
     }
 }
 
-/// <summary><see cref="Provider{T}"/>holding entity. </summary>
+/// <summary>The Element that hosts a <see cref="Provider{T}"/>.</summary>
 internal sealed class ProviderElement<T> : Element
 {
     private readonly LayoutNode _node;

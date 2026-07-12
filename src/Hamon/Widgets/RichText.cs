@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>A section of inline decorative text (Flutter<c>TextSpan</c>). <see cref="RichText"/>default.</summary>
+/// <summary>A run of inline styled text (Flutter's <c>TextSpan</c>). Falls back to <see cref="RichText"/>'s defaults for unset properties.</summary>
 public sealed class TextSpan
 {
     public TextSpan(string text)
@@ -18,26 +18,27 @@ public sealed class TextSpan
 }
 
 /// <summary>
-/// Placing multiple style strings inline as one paragraph (Flutter<c>RichText</c>).
-/// Wraps each word using spaces in the string (<see cref="Wrap"/>).
+/// Lays out multiple differently styled strings inline as a single paragraph
+/// (Flutter's <c>RichText</c>). Wraps at word boundaries (spaces) when
+/// <see cref="Wrap"/> is enabled.
 /// </summary>
 public sealed class RichText : Widget
 {
     public IReadOnlyList<TextSpan> Spans { get; init; } = Array.Empty<TextSpan>();
 
-    /// <summary>Default size when span does not specify color/size.</summary>
+    /// <summary>Default font size used when a span doesn't specify its own.</summary>
     public float FontSize { get; init; } = 16f;
 
-    /// <summary>Default text color (when span is not specified. If not specified, theme's OnSurface).</summary>
+    /// <summary>Default text color used when a span doesn't specify its own (falls back to the theme's <see cref="HamonTheme.OnSurface"/> if unspecified).</summary>
     public Color? Color { get; init; }
 
-    /// <summary>Whether to wrap words in units of available width (false = 1 line, width is content).</summary>
+    /// <summary>Whether to wrap words within the available width (false = single line, width sized to content).</summary>
     public bool Wrap { get; init; } = true;
 
     public override Element CreateElement() => new RichTextElement(this);
 }
 
-/// <summary><see cref="RichText"/>holding entity. </summary>
+/// <summary>The <see cref="Element"/> that backs a <see cref="RichText"/> widget.</summary>
 internal sealed class RichTextElement : Element
 {
     private readonly LayoutNode _node;
@@ -62,7 +63,7 @@ internal sealed class RichTextElement : Element
     public override LayoutNode LayoutNode => _node;
 
     private ITextRenderer Renderer => Context.Text
-        ?? throw new InvalidOperationException("RichText の計測/描画には ITextRenderer が要る（HamonRoot 経由）。");
+        ?? throw new InvalidOperationException("RichText requires an ITextRenderer to measure/paint (supplied via HamonRoot).");
 
     public override void Paint(in PaintContext context)
     {

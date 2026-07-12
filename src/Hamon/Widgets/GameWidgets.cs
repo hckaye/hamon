@@ -3,7 +3,8 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Overlay a small badge (number of cases/notification points) on the top right of the child (Flutter<c>Badge</c>).
+/// Overlays a small badge (item count/notification dot) on the top-right of the child (equivalent to
+/// Flutter's <c>Badge</c>).
 /// </summary>
 public sealed class Badge : StatelessWidget
 {
@@ -51,20 +52,22 @@ public sealed class Badge : StatelessWidget
 }
 
 /// <summary>
-/// Action button with cooldown (for action bar).<see cref="Progress"/>Invalid until (0..1・1=available) is filled,
-/// The rest is indicated by a blackout curtain that decreases from the top.<see cref="FocusableActionDetector"/>/<see cref="Button"/>An example to build on.
+/// Action button with cooldown (for action bars). Disabled until <see cref="Progress"/> (0..1, 1 = available)
+/// reaches full; the remaining cooldown is shown as a blackout curtain that shrinks from the top. An example
+/// built on <see cref="FocusableActionDetector"/>/<see cref="Button"/>.
 /// </summary>
 public sealed class CooldownButton : StatelessWidget
 {
     public Widget? Child { get; init; }
 
-    /// <summary>Cooldown progress (0=immediately after start, 1=available).<see cref="ProgressGetter"/>Used when not specified.</summary>
+    /// <summary>Cooldown progress (0 = immediately after start, 1 = available). Used only when <see cref="ProgressGetter"/> is not specified.</summary>
     public float Progress { get; init; } = 1f;
 
     /// <summary>
-    /// Cooldown progress<b>Read every frame when drawing</b>（<see cref="ProgressBar.ValueGetter"/>isomorphic).
-    /// Reconcile without rebuilding (this button is not reconciled as the CD progresses), pressing<c>getter() &gt;= 1</c>Holds true only when .
-    /// For action bars that want to avoid having to put frequently changing CDs on atom/state and rebuild them every frame.
+    /// Cooldown progress, <b>read every frame at paint time</b> (analogous to <see cref="ProgressBar.ValueGetter"/>).
+    /// This button is not rebuilt as the cooldown progresses; pressing only succeeds when <c>getter() &gt;= 1</c>
+    /// holds true. Intended for action bars that want to avoid putting frequently changing cooldowns into
+    /// atoms/state and rebuilding every frame.
     /// </summary>
     public Func<float>? ProgressGetter { get; init; }
 
@@ -78,7 +81,7 @@ public sealed class CooldownButton : StatelessWidget
 
     public Color? OverlayColor { get; init; }
 
-    /// <summary>Notifications of hover/pressed/focused transitions (sound effects/custom animation driven).<see cref="Button.OnStateChanged"/>Delegated to.</summary>
+    /// <summary>Notifications of hover/pressed/focused transitions (for driving sound effects/custom animation); delegated to <see cref="Button.OnStateChanged"/>.</summary>
     public Action<WidgetState>? OnStateChanged { get; init; }
 
     /// <summary>Frame image skin (9-slice/sprite). </summary>
@@ -160,12 +163,13 @@ public sealed class CooldownButton : StatelessWidget
 }
 
 /// <summary>
-/// CD blackout curtain<b>When drawing</b>Draw a leaf (<see cref="CooldownButton.ProgressGetter"/>).
-/// Paint the rest (=1-progress) from above = this widget will not be reconstituted even if the progress changes (reconcile is zero).
+/// Cooldown blackout curtain, drawn <b>at paint time</b> from <see cref="CooldownButton.ProgressGetter"/>.
+/// Paints the remaining amount (= 1 - progress) from the top; this widget is never rebuilt as progress
+/// changes (zero reconciles).
 /// </summary>
 internal sealed class CooldownCover : Widget
 {
-    /// <summary>0..1 (1=enabled). <c>1-progress</c>Paint from above.</summary>
+    /// <summary>0..1 (1 = enabled); paints <c>1 - progress</c> from the top.</summary>
     public required Func<float> Progress { get; init; }
 
     public Color Color { get; init; }
@@ -208,8 +212,8 @@ internal sealed class CooldownCoverElement : Element
 }
 
 /// <summary>
-/// Inventory/action bar slot (framed square, arbitrary icon + quantity badge, selection highlight, focusable).
-/// <see cref="Button"/>An example to build on.
+/// Inventory/action bar slot (a framed square with an arbitrary icon, quantity badge, selection highlight,
+/// and focusability). An example built on <see cref="Button"/>.
 /// </summary>
 public sealed class SlotButton : StatelessWidget
 {
@@ -230,13 +234,13 @@ public sealed class SlotButton : StatelessWidget
 
     public Color? SelectedColor { get; init; }
 
-    /// <summary>Notifications of hover/pressed/focused transitions (sound effects/custom animation driven).<see cref="Button.OnStateChanged"/>Delegated to.</summary>
+    /// <summary>Notifications of hover/pressed/focused transitions (for driving sound effects/custom animation); delegated to <see cref="Button.OnStateChanged"/>.</summary>
     public Action<WidgetState>? OnStateChanged { get; init; }
 
     /// <summary>Image skin for slot frame (9-slice/sprite). </summary>
     public ImageSkin FrameSkin { get; init; }
 
-    /// <summary>Image skin of slot frame when selected (if not set)<see cref="FrameSkin"/>).</summary>
+    /// <summary>Image skin of the slot frame when selected (falls back to <see cref="FrameSkin"/> if not set).</summary>
     public ImageSkin SelectedFrameSkin { get; init; }
 
     public override Widget Build(BuildContext context)

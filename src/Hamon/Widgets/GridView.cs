@@ -3,35 +3,37 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Virtualized Grid (Flutter<c>GridView.builder</c> + <c>SliverGridDelegateWithFixedCrossAxisCount</c>equivalent).
-/// cross axis<see cref="CrossAxisCount"/>Divide evenly into columns;<b>visible lines only</b>of<see cref="Builder"/>materialize with
-/// (Light weight even with a huge number of items = row-by-row virtualization). <see cref="MainAxisExtent"/>Specify directly or if not specified
-/// Cross axis cell length and<see cref="ChildAspectRatio"/>Lead from (=cross/main).<see cref="OnEndReached"/>Infinite scroll.
-/// Frequently appears in inventory/slot grid, etc.
+/// Virtualized grid (equivalent to Flutter's <c>GridView.builder</c> plus
+/// <c>SliverGridDelegateWithFixedCrossAxisCount</c>). Divides the cross axis evenly into
+/// <see cref="CrossAxisCount"/> columns and materializes only <b>visible rows</b> via <see cref="Builder"/>
+/// (lightweight even with huge item counts = row-by-row virtualization). Specify <see cref="MainAxisExtent"/>
+/// directly, or if unspecified, derive the main-axis cell length from the cross-axis cell length and
+/// <see cref="ChildAspectRatio"/> (= cross/main). Use <see cref="OnEndReached"/> for infinite scroll.
+/// Frequently used for inventory/slot grids, etc.
 /// </summary>
 public sealed class GridView : Widget
 {
     public int ItemCount { get; init; }
 
-    /// <summary>index → ​​Cell Widget. </summary>
+    /// <summary>Maps an index to a cell widget.</summary>
     public Func<int, Widget> Builder { get; init; } = static _ => new SizedBox();
 
     /// <summary>Number of columns in the cross axis (≥1).</summary>
     public int CrossAxisCount { get; init; } = 1;
 
-    /// <summary>Scroll direction (default<see cref="Axis.Vertical"/>). </summary>
+    /// <summary>Scroll direction (default <see cref="Axis.Vertical"/>).</summary>
     public Axis Axis { get; init; } = Axis.Vertical;
 
-    /// <summary>Principal axis cell length (px). <see cref="ChildAspectRatio"/>More priority.</summary>
+    /// <summary>Main-axis cell length (px); takes priority over <see cref="ChildAspectRatio"/>.</summary>
     public float? MainAxisExtent { get; init; }
 
-    /// <summary>Cell aspect ratio (cross axis length / principal axis length).<see cref="MainAxisExtent"/>Deduces the main axis length when not specified (default 1=square).</summary>
+    /// <summary>Cell aspect ratio (cross-axis length / main-axis length); used to derive the main-axis length when <see cref="MainAxisExtent"/> is not specified (default 1 = square).</summary>
     public float ChildAspectRatio { get; init; } = 1f;
 
     /// <summary>Spacing between columns (cross axis) in px.</summary>
     public float CrossAxisSpacing { get; init; }
 
-    /// <summary>Spacing between lines (major axis) in px.</summary>
+    /// <summary>Spacing between rows (main axis) in px.</summary>
     public float MainAxisSpacing { get; init; }
 
     public ScrollController? Controller { get; init; }
@@ -40,12 +42,13 @@ public sealed class GridView : Widget
     public bool Bounce { get; init; } = true;
 
     /// <summary>
-    /// Whether to enable manual scrolling (drag/wheel). <b>Disable user interaction scrolling</b>do
-    /// （<see cref="Controller"/>・Scroll-to-focus etc.<b>Program control still possible</b>）。Flutter <c>NeverScrollableScrollPhysics</c>Quite a bit.
+    /// Whether to enable manual scrolling (drag/wheel). Set to false to <b>disable user-interaction
+    /// scrolling</b> (programmatic control via <see cref="Controller"/>, scroll-to-focus, etc. is <b>still
+    /// possible</b>). Roughly equivalent to Flutter's <c>NeverScrollableScrollPhysics</c>.
     /// </summary>
     public bool ManualScroll { get; init; } = true;
 
-    /// <summary>Scroll movement constants (sensitivity/following/rubber band/inertia). <see cref="HamonTheme.ScrollPhysics"/>。</summary>
+    /// <summary>Scroll movement constants (sensitivity/following/rubber band/inertia); falls back to <see cref="HamonTheme.ScrollPhysics"/> when not set.</summary>
     public ScrollPhysics? Physics { get; init; }
 
     public Dimension Width { get; init; }
@@ -59,8 +62,8 @@ public sealed class GridView : Widget
 }
 
 /// <summary>
-/// <see cref="GridView"/>holding entity.
-/// The scroll amount is maintained, updated by drag/controller, and the drawing is a rectangular clip.
+/// The element backing <see cref="GridView"/>. Maintains the scroll offset, updates it via drag or the
+/// controller, and clips drawing to a rectangle.
 /// </summary>
 internal sealed class GridViewElement : Element, IVirtualLayout, IScrollable
 {

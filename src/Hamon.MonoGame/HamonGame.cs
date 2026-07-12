@@ -4,15 +4,17 @@ using Microsoft.Xna.Framework;
 namespace Hamon.MonoGame;
 
 /// <summary>
-/// A minimal host for creating UI apps using only Hamon (<see cref="Game"/>derived). <see cref="HamonApp"/>・
-/// Since we are wiring the update/draw loop internally, we can pass the root widget to<c>Run()</c>Just do it and stand up.
+/// A minimal host for building UI apps with only Hamon (derived from <see cref="Game"/>). It wires up
+/// <see cref="HamonApp"/> and the update/draw loop internally, so you can just pass the root widget and
+/// call <c>Run()</c> to get started.
 /// </summary>
 /// <remarks>
-/// <para>Minimal example:<c>using var game = new HamonGame(new MyRoot()); game.Run();</c></para>
-/// <para>option:<c>new HamonGame(() =&gt; new MyRoot(), new HamonAppOptions { Theme = HamonTheme.Dark })</c></para>
-/// <para>If you want to dynamically determine the route<see cref="BuildRoot"/>override (for subclasses).</para>
-/// <para>If the font is not specified, it will be automatically resolved (<see cref="HamonFont"/>).
-/// Startup without setting for European languages, and for Japanese<see cref="HamonAppOptions.Font"/>/<c>HAMON_FONT</c>Specified by etc.</para>
+/// <para>Minimal example: <c>using var game = new HamonGame(new MyRoot()); game.Run();</c></para>
+/// <para>With options: <c>new HamonGame(() =&gt; new MyRoot(), new HamonAppOptions { Theme = HamonTheme.Dark })</c></para>
+/// <para>To determine the root widget dynamically, subclass and override <see cref="BuildRoot"/> instead.</para>
+/// <para>If no font is specified, one is resolved automatically (see <see cref="HamonFont"/>): this works
+/// out of the box for European languages, while Japanese support requires specifying a font via
+/// <see cref="HamonAppOptions.Font"/>, <c>HAMON_FONT</c>, etc.</para>
 /// </remarks>
 public class HamonGame : Game
 {
@@ -20,7 +22,7 @@ public class HamonGame : Game
     private readonly HamonAppOptions _options;
     private readonly Func<Widget>? _root;
 
-    /// <summary>Build by passing the root Widget builder.</summary>
+    /// <summary>Constructs the host by passing a root widget builder.</summary>
     public HamonGame(Func<Widget> root, HamonAppOptions? options = null)
         : this(options) => _root = root;
 
@@ -28,7 +30,7 @@ public class HamonGame : Game
     public HamonGame(Widget root, HamonAppOptions? options = null)
         : this(options) => _root = () => root;
 
-    /// <summary>route<see cref="BuildRoot"/>For subclasses supplied with override of .</summary>
+    /// <summary>For subclasses that supply the root by overriding <see cref="BuildRoot"/>.</summary>
     protected HamonGame(HamonAppOptions? options = null)
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -42,7 +44,7 @@ public class HamonGame : Game
         HamonApp.ApplyWindow(this, Window, _graphics, _options, applyChanges: false);
     }
 
-    /// <summary>pre-wired<see cref="HamonApp"/>（<see cref="Game.LoadContent"/>(valid thereafter).</summary>
+    /// <summary>The pre-wired <see cref="HamonApp"/> (valid from <see cref="Game.LoadContent"/> onward).</summary>
     public HamonApp App { get; private set; } = null!;
 
     /// <summary>Provides a root widget. </summary>

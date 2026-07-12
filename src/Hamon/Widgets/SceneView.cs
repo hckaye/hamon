@@ -3,9 +3,10 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// <see cref="SceneView"/>The context to pass to the drawing delegate. <see cref="Painter"/>And the layout was confirmed.
-/// drawing rectangle<see cref="Bounds"/>have. <see cref="Painter"/>to a backend-specific type (e.g. MonoGamePainter)
-/// Cast and live drawing (original<c>SpriteBatch.Begin</c>etc.) = Core remains engine independent.
+/// The context passed to <see cref="SceneView"/>'s drawing delegate. It carries <see cref="Painter"/> and the
+/// layout-resolved drawing rectangle <see cref="Bounds"/>. Cast <see cref="Painter"/> to a backend-specific type
+/// (e.g. MonoGamePainter) to perform raw drawing (e.g. calling <c>SpriteBatch.Begin</c> directly), keeping Core
+/// engine-independent.
 /// </summary>
 public readonly struct SceneDrawContext
 {
@@ -21,54 +22,59 @@ public readonly struct SceneDrawContext
     public IPainter Painter { get; }
 
     /// <summary>
-    /// Absolute rectangle of drawing destination = **device space (physical px)**. <see cref="Scale"/>The value multiplied by
-    /// Raw drawing (SpriteBatch, etc.) draws to the back buffer = physical px, so if you use this rectangle as is, the position and dimensions will be correct.
+    /// Absolute rectangle of the drawing destination in device space (physical pixels), already multiplied by
+    /// <see cref="Scale"/>. Since raw drawing (SpriteBatch, etc.) draws to the back buffer in physical pixels, using
+    /// this rectangle as-is gives the correct position and size.
     /// </summary>
     public Rect Bounds { get; }
 
     /// <summary>
     /// Device pixel ratio (physical px ÷ logical pt, e.g. 2.0 for HiDPI/Retina, default 1.0).
-    /// Multiply when you want to use "logical pt specified thickness/cell size" in raw drawing (e.g.<c>Line width × Scale</c>）。
+    /// Multiply values specified in logical pt (line thickness, cell size, etc.) by this when doing raw drawing
+    /// (e.g. <c>lineWidth * Scale</c>).
     /// </summary>
     public float Scale { get; }
 
     /// <summary>
-    /// Text measurement/drawing (backend injection/text cannot be drawn if it is null).<see cref="Painter"/>has no characters, so
-    /// Use this to draw text (floating damage, entity names, etc.) in the scene.<see cref="DrawText"/>/
-    /// <see cref="MeasureText"/>Easy to transit (location is<b>device space</b>・Size is passed in logical pt internally<see cref="Scale"/>).
+    /// Text measurement/drawing backend (injected; text cannot be drawn if this is null). <see cref="Painter"/> has
+    /// no text-drawing capability of its own, so use this to draw text in the scene (e.g. floating damage numbers,
+    /// entity names). <see cref="DrawText"/> and <see cref="MeasureText"/> are convenience wrappers around it:
+    /// position is in device space, and size is specified in logical pt and multiplied internally by
+    /// <see cref="Scale"/>.
     /// </summary>
     public ITextRenderer? Text { get; }
 
-    /// <summary>device space<paramref name="position"/>(top left) to logic<paramref name="pixelSize"/>Draw the text of (<see cref="Scale"/>included).</summary>
+    /// <summary>Draws text at <paramref name="position"/> in device space (top-left) with a logical <paramref name="pixelSize"/> (multiplied by <see cref="Scale"/> internally).</summary>
     public void DrawText(string text, Vec2 position, float pixelSize, Color color) =>
         Text?.Draw(text, position, pixelSize * Scale, color);
 
-    /// <summary>logic<paramref name="pixelSize"/>text dimensions (<b>device space</b>＝<see cref="Scale"/>included). </summary>
+    /// <summary>Measures the size of the text for a logical <paramref name="pixelSize"/>, returned in device space (multiplied by <see cref="Scale"/>).</summary>
     public Vec2 MeasureText(string text, float pixelSize) => Text is { } t ? t.Measure(text, pixelSize * Scale) : default;
 }
 
-/// <summary>A user-side implementation that takes over the drawing of the game world (cache and pass instead of generating it every frame).</summary>
+/// <summary>A user-supplied implementation responsible for drawing the game world (cache it and pass the same instance instead of allocating a new one every frame).</summary>
 public interface ISceneRenderer
 {
     void Draw(in SceneDrawContext context);
 }
 
 /// <summary>
-/// Embed the game world (MonoGame drawing) as one widget in the UI tree (Flutter<c>Texture</c>equivalent).
-/// To the rectangle obtained from the layout<see cref="Renderer"/>／<see cref="OnDraw"/>delegate. <see cref="Clip"/>teeth
-/// viewport clip (does not extend outside the rectangle).<see cref="Focusable"/>If you set the gamepad's default focus to
-/// Put it on the play screen,<see cref="OnPointer"/>You can transfer the pointer inside the rectangle to the game.
-/// Hamon doesn't know that the content is a game (general purpose/VLO independent).
+/// Embeds the game world (MonoGame drawing) as a single widget in the UI tree (equivalent to Flutter's <c>Texture</c>).
+/// Drawing is delegated to <see cref="Renderer"/> / <see cref="OnDraw"/> for the rectangle obtained from layout.
+/// <see cref="Clip"/> clips drawing to the viewport rectangle (content does not extend outside it). Setting
+/// <see cref="Focusable"/> lets you make this the gamepad's default focus target on the play screen, and
+/// <see cref="OnPointer"/> lets you forward pointer input inside the rectangle to the game. Hamon has no knowledge
+/// that the content is a game — it remains general-purpose and engine-independent.
 /// </summary>
 public sealed class SceneView : Widget
 {
-    /// <summary>Drawing delegate destination (interface).<see cref="OnDraw"/>Can be used in conjunction with (call both).</summary>
+    /// <summary>Drawing delegate as an interface. Can be used together with <see cref="OnDraw"/> (both are invoked).</summary>
     public ISceneRenderer? Renderer { get; init; }
 
-    /// <summary>Drawing delegate (delegate). </summary>
+    /// <summary>Drawing delegate.</summary>
     public Action<SceneDrawContext>? OnDraw { get; init; }
 
-    /// <summary>Transfer the pointer (touch/mouse) inside the rectangle to the game. </summary>
+    /// <summary>Forwards pointer (touch/mouse) input inside the rectangle to the game.</summary>
     public Action<PointerEvent>? OnPointer { get; init; }
 
     /// <summary>Width (default Auto = fill available width).</summary>
@@ -77,22 +83,22 @@ public sealed class SceneView : Widget
     /// <summary>Height (default Auto = fill available height).</summary>
     public Dimension Height { get; init; }
 
-    /// <summary>Clip the drawing to the viewport rectangle (default true). </summary>
+    /// <summary>Clips drawing to the viewport rectangle (default true).</summary>
     public bool Clip { get; init; } = true;
 
-    /// <summary>Make the gamepad the focus target (such as setting the default focus on the play screen).</summary>
+    /// <summary>Makes this widget a gamepad focus target (e.g. to set the default focus on the play screen).</summary>
     public bool Focusable { get; init; }
 
-    /// <summary>Focus holding node.<see cref="Focusable"/>(recommended to be retained by the caller to retain the state).</summary>
+    /// <summary>The focus node. Used only when <see cref="Focusable"/> is true (recommended to be retained by the caller to preserve state across rebuilds).</summary>
     public FocusNode Node { get; init; } = new();
 
-    /// <summary><see cref="Focusable"/>Get the initial focus at the time.</summary>
+    /// <summary>Whether to receive initial focus when <see cref="Focusable"/> is true.</summary>
     public bool Autofocus { get; init; }
 
     public override Element CreateElement() => new SceneViewElement(this);
 }
 
-/// <summary><see cref="SceneView"/>holding entity. </summary>
+/// <summary>The element that backs <see cref="SceneView"/>.</summary>
 internal sealed class SceneViewElement : Element
 {
     private readonly LayoutNode _node;

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Hamon 単独デモ／自己検証ハーネス（vlo 非依存）。
+  <!-- Hamon 単独デモ／自己検証ハーネス。
        通常起動はインタラクティブ描画。環境変数 HAMON_DUMP=<出力png> が在る場合は
        オフスクリーン(RenderTarget)へ1フレーム描画して PNG 保存し終了する（ヘッドレス検証用）。
        第1引数=TTFパス（未指定時は HAMON_FONT 環境変数）。 -->

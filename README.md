@@ -11,7 +11,7 @@ Hamon lets you describe UI declaratively while following state changes and avoid
 ## Features and design goals
 
 - **Declarative retained UI**: three layers—Widget (immutable blueprint) → Element (retained instance) → Render.
-- **Reactive updates**: rebuilds only the changed parts when state changes; steady-state rendering is allocation-free.
+- **Reactive updates**: rebuilds only the changed parts when state changes. Steady-state rendering allocates almost nothing, and CI enforces it with per-frame allocation budgets (e.g. under 512 B for a simple widget, under 4 KB for a full-screen dashboard).
 - **Flexbox subset** layout with absolute-position anchors.
 - **First-class input support**: touch; mouse and keyboard; and gamepads with focus navigation (Focusable, D-pad navigation, OK/Cancel).
 - **Text rendering**: FontStashSharp with dynamic TTF glyph atlases, including Japanese text support.

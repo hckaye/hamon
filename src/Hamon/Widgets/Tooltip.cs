@@ -3,8 +3,9 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Tooltip with explanation on hover (Flutter<c>Tooltip</c>). <see cref="WaitDuration"/>) When you hover your mouse over
-/// Display a message as a small card under the child and disappear when you leave it (put it on the overlay layer).
+/// Tooltip that shows an explanatory message on hover (equivalent to Flutter's <c>Tooltip</c>). After the mouse
+/// hovers for <see cref="WaitDuration"/> seconds, a small card with the message is displayed below the child on
+/// the overlay layer, and it disappears when the mouse leaves.
 /// </summary>
 public sealed class Tooltip : Widget
 {
@@ -12,7 +13,7 @@ public sealed class Tooltip : Widget
 
     public string Message { get; init; } = string.Empty;
 
-    /// <summary>Hover time to display (in seconds).</summary>
+    /// <summary>Hover duration before the tooltip is shown, in seconds.</summary>
     public float WaitDuration { get; init; } = 0.5f;
 
     public Color? Background { get; init; }
@@ -21,13 +22,13 @@ public sealed class Tooltip : Widget
 
     public float FontSize { get; init; } = 13f;
 
-    /// <summary>Vertical offset from child (px).</summary>
+    /// <summary>Vertical offset from the child, in pixels.</summary>
     public float VerticalOffset { get; init; } = 6f;
 
     public override Element CreateElement() => new TooltipElement(this);
 }
 
-/// <summary><see cref="Tooltip"/>holding entity. </summary>
+/// <summary>The <see cref="Element"/> that backs a <see cref="Tooltip"/>.</summary>
 internal sealed class TooltipElement : Element, IHoverTarget, ITicker
 {
     private readonly LayoutNode _node = new(new Style { Kind = LayoutKind.Box }, null);

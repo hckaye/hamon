@@ -1,8 +1,8 @@
 namespace Hamon.Widgets;
 
 /// <summary>
-/// A composition widget that assembles and returns other widgets (Flutter<c>StatelessWidget</c>）。
-/// <see cref="Build"/>is called when the state changes and reconciles the result as a child.
+/// A composition widget that assembles and returns other widgets (equivalent to Flutter's <c>StatelessWidget</c>).
+/// <see cref="Build"/> is called when state changes, and the result is reconciled as this widget's child.
 /// </summary>
 public abstract class StatelessWidget : Widget
 {
@@ -11,7 +11,7 @@ public abstract class StatelessWidget : Widget
     public override Element CreateElement() => new StatelessElement(this);
 }
 
-/// <summary><see cref="StatelessWidget"/>holding entity. </summary>
+/// <summary>The element that backs <see cref="StatelessWidget"/>.</summary>
 public sealed class StatelessElement : Element
 {
     private Element? _child;

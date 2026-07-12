@@ -6,11 +6,13 @@ using System.Text;
 namespace Hamon.MonoGame;
 
 /// <summary>
-/// Desktop (DesktopGL=SDL2)<see cref="ITextInput"/>implementation.
-/// Enabling IME (<c>SDL_StartTextInput</c>)・Candidate window position (<c>SDL_SetTextInputRect</c>）・
-/// <b>Text being converted (<c>SDL_TEXTEDITING</c>) monitoring</b>(because MonoGame does not publish it)<c>SDL_AddEventWatch</c>).
-/// Fixed characters are MonoGame's<c>Window.TextInput</c>Via (the app<see cref="HamonRoot.DispatchText"/>flow to).
-/// In environments where SDL2 cannot be resolved/there are no symbols<b>Safely degenerate to no-op</b>(Confirm input will continue to work).
+/// Desktop (DesktopGL = SDL2) implementation of <see cref="ITextInput"/>. Handles enabling IME
+/// (<c>SDL_StartTextInput</c>), positioning the candidate window (<c>SDL_SetTextInputRect</c>), and
+/// <b>monitoring in-progress composition text</b> (<c>SDL_TEXTEDITING</c>) via <c>SDL_AddEventWatch</c>,
+/// since MonoGame does not expose it. Confirmed characters flow through MonoGame's
+/// <c>Window.TextInput</c> event (into the app via <see cref="HamonRoot.DispatchText"/>). In
+/// environments where SDL2 cannot be resolved or the symbols are missing, this
+/// <b>safely degrades to a no-op</b> (confirmed input keeps working).
 /// </summary>
 public sealed class SdlTextInput : ITextInput, IDisposable
 {
@@ -115,7 +117,7 @@ public sealed class SdlTextInput : ITextInput, IDisposable
         return 0; // 監視は戻り値を無視する
     }
 
-    /// <summary>Remove event monitoring and stop the IME (preventing watch failure during multiple generation/re-initialization = old callback firing).</summary>
+    /// <summary>Removes the event watch and stops IME input, preventing a stale callback from firing if this instance is disposed and re-created.</summary>
     public void Dispose()
     {
         if (_disposed)

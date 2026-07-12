@@ -3,8 +3,10 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// App bar at the top of the screen (Flutter<c>AppBar</c>equivalent).
-/// Fixed height. <see cref="Title"/>(string)<see cref="TitleWidget"/>。
+/// An app bar at the top of the screen (the equivalent of Flutter's <c>AppBar</c>).
+/// Has a fixed height. <see cref="Title"/> is a plain string; use
+/// <see cref="TitleWidget"/> for a custom title widget, which takes priority over
+/// <see cref="Title"/> when set.
 /// </summary>
 public sealed class AppBar : StatelessWidget
 {
@@ -62,20 +64,22 @@ public sealed class AppBar : StatelessWidget
     }
 }
 
-/// <summary>One item in the bottom navigation (icon = glyph character or arbitrary widget + label).</summary>
+/// <summary>One item in the bottom navigation bar: an icon (a glyph character or arbitrary widget) plus a label.</summary>
 public sealed class NavigationDestination
 {
     public required string Label { get; init; }
 
-    /// <summary>Glyphs/emojis for icons (optional).<see cref="IconWidget"/>(Used when not specified).</summary>
+    /// <summary>Glyph or emoji character for the icon (optional). Ignored if <see cref="IconWidget"/> is set.</summary>
     public string? Icon { get; init; }
 
     public Widget? IconWidget { get; init; }
 }
 
 /// <summary>
-/// Bottom navigation bar (Flutter<c>NavigationBar</c>/<c>BottomNavigationBar</c>equivalent).
-/// currently selected<see cref="HamonTheme.Primary"/>Emphasize it. <see cref="OnDestinationSelected"/>。
+/// A bottom navigation bar (the equivalent of Flutter's <c>NavigationBar</c> /
+/// <c>BottomNavigationBar</c>). The currently selected item is emphasized using
+/// <see cref="HamonTheme.Primary"/>. Selection changes are reported via
+/// <see cref="OnDestinationSelected"/>.
 /// </summary>
 public sealed class NavigationBar : StatelessWidget
 {
@@ -142,8 +146,10 @@ public sealed class NavigationBar : StatelessWidget
 }
 
 /// <summary>
-/// Screen skeleton (Flutter<c>Scaffold</c>equivalent).<see cref="AppBar"/>(Top) +<see cref="Body"/>(Extension) +
-/// <see cref="BottomNavigationBar"/>(Bottom) are stacked vertically. <see cref="Background"/>(default theme).
+/// A screen skeleton (the equivalent of Flutter's <c>Scaffold</c>). Stacks
+/// <see cref="AppBar"/> (top), <see cref="Body"/> (expanded to fill the remaining
+/// space), and <see cref="BottomNavigationBar"/> (bottom) vertically.
+/// <see cref="Background"/> falls back to the theme's background if unspecified.
 /// </summary>
 public sealed class Scaffold : StatelessWidget
 {

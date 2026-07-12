@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>ITicker that calls back only once after a certain period of time (used for auto-destruction of Snackbar/Toast). </summary>
+/// <summary>An <see cref="ITicker"/> that fires a callback once after a delay (used to auto-dismiss snackbars and toasts).</summary>
 internal sealed class DelayTimer : ITicker
 {
     private readonly Action _onElapsed;
@@ -34,13 +34,16 @@ internal sealed class DelayTimer : ITicker
     }
 }
 
-/// <summary>To issue Snackbar/Toast (transient notification)<see cref="HamonRoot"/>Expansion.</summary>
+/// <summary>Extension methods on <see cref="HamonRoot"/> for showing snackbars and toasts (transient notifications).</summary>
 public static class Notifications
 {
     /// <summary>
-    /// Display a snack bar at the bottom of the screen (Flutter<c>ScaffoldMessenger.showSnackBar</c>equivalent).
-    /// <paramref name="seconds"/>It will disappear automatically afterwards.<paramref name="actionLabel"/>/<paramref name="onAction"/>You can place only one action.
-    /// return value<see cref="OverlayEntry"/>of<see cref="HamonRoot.RemoveOverlay"/>If you give it to , it will be deleted immediately.
+    /// Displays a snackbar at the bottom of the screen (the equivalent of Flutter's
+    /// <c>ScaffoldMessenger.showSnackBar</c>). It disappears automatically after
+    /// <paramref name="seconds"/>. A single action can be added via
+    /// <paramref name="actionLabel"/> and <paramref name="onAction"/>. Passing the
+    /// returned <see cref="OverlayEntry"/> to <see cref="HamonRoot.RemoveOverlay"/>
+    /// removes it immediately.
     /// </summary>
     public static OverlayEntry ShowSnackbar(this HamonRoot root, string message, float seconds = 3f, string? actionLabel = null, Action? onAction = null)
     {
@@ -58,7 +61,7 @@ public static class Notifications
         return entry;
     }
 
-    /// <summary>Displays a short toast (no interaction) at the bottom center of the screen.<paramref name="seconds"/>It will disappear automatically afterwards.</summary>
+    /// <summary>Displays a short, non-interactive toast at the bottom center of the screen. It disappears automatically after <paramref name="seconds"/>.</summary>
     public static OverlayEntry ShowToast(this HamonRoot root, string message, float seconds = 2f)
     {
         OverlayEntry? entry = null;

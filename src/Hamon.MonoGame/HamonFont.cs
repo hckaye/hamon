@@ -3,14 +3,15 @@ using System.Runtime.InteropServices;
 namespace Hamon.MonoGame;
 
 /// <summary>
-/// TTF/OTF font resolution for text.
-/// (Avoid bloat). <c>FontPath</c>→ Environment variables<c>HAMON_FONT</c> →
-/// next to the executable file<c>*.ttf</c>(Bundled assets terms) →<b>OS system font</b>(Single face TTF/OTF/Japanese support preferred).
-/// FontStashSharp is<c>.ttc</c>(TrueType Collection) is excluded from the candidates because it cannot be read.
+/// Resolves a TTF/OTF font for text rendering (to avoid bundling a font by default). Resolution order:
+/// <c>FontPath</c> → the <c>HAMON_FONT</c> environment variable → a <c>*.ttf</c> next to the executable
+/// (for bundled assets) → an <b>OS system font</b> (preferring a single-face TTF/OTF with Japanese
+/// support). <c>.ttc</c> (TrueType Collection) files are excluded from the candidates because
+/// FontStashSharp cannot read them.
 /// </summary>
 public static class HamonFont
 {
-    /// <summary>Lazy enumeration of font bytes in order of attempted resolution (first<see cref="HamonApp"/>The one that can be read is adopted).</summary>
+    /// <summary>Lazily enumerates font bytes in resolution order; <see cref="HamonApp"/> adopts the first one that can be read.</summary>
     public static IEnumerable<byte[]> Candidates(HamonAppOptions options)
     {
         if (options.Font is { Length: > 0 } bytes)
@@ -52,7 +53,7 @@ public static class HamonFont
         }
     }
 
-    /// <summary>in the same directory as the executable file<c>*.ttf</c>(Prioritize NotoSansJP, then by name). </summary>
+    /// <summary>Enumerates <c>*.ttf</c> files in the same directory as the executable (prioritizing NotoSansJP, then sorted by name).</summary>
     private static IEnumerable<string> TtfNextToExecutable()
     {
         string dir = AppContext.BaseDirectory;
@@ -81,8 +82,10 @@ public static class HamonFont
     }
 
     /// <summary>
-    /// OS system font candidates (single face ttf/otf only/Japanese support first).
-    /// On Windows/Linux, Roman languages ​​are output without any settings (explicit fonts are recommended for strict Japanese = most Japanese fonts on each OS are .ttc).
+    /// OS system font candidates (single-face TTF/OTF only, prioritizing Japanese support).
+    /// On Windows/Linux, Latin-script text renders fine out of the box, but for correct Japanese rendering
+    /// an explicit font is recommended, since most Japanese fonts on those platforms ship as <c>.ttc</c>
+    /// files.
     /// </summary>
     private static IEnumerable<string> SystemFonts()
     {

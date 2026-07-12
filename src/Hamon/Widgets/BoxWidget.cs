@@ -3,8 +3,8 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Common settings for widgets that generate one layout node.<see cref="RenderElement"/>reads this.
-/// Each Flutter-style widget (<see cref="Row"/>/<see cref="Column"/>/<see cref="Container"/>etc.) will be implemented.
+/// Common configuration for widgets that produce a single layout node; <see cref="RenderElement"/> reads this.
+/// Implemented by each Flutter-style widget (<see cref="Row"/>/<see cref="Column"/>/<see cref="Container"/>, etc.).
 /// </summary>
 internal interface IRenderConfig
 {
@@ -20,9 +20,7 @@ internal interface IRenderConfig
     float Radius => 0f;
 }
 
-/// <summary>
-/// Low-level layout box (<see cref="Style"/>directly).
-/// </summary>
+/// <summary>A low-level layout box that directly exposes <see cref="Style"/>.</summary>
 public sealed class BoxWidget : Widget, IRenderConfig
 {
     public Style Style { get; init; }
@@ -42,13 +40,21 @@ public sealed class BoxWidget : Widget, IRenderConfig
 }
 
 /// <summary>
-/// <see cref="IRenderConfig"/>The holding entity of the Widget.<see cref="LayoutNode"/>own,
-/// Update child with keyed reconcile.
+/// The Element that hosts a Widget implementing <see cref="IRenderConfig"/>. Owns its own <see cref="LayoutNode"/>
+/// and updates children via keyed reconciliation.
 /// </summary>
 public class RenderElement : Element
 {
     private readonly LayoutNode _node;
     private readonly List<Element> _children = new();
+
+    // Reusable scratch buffers for UpdateChildren's keyed reconciliation. These are cleared (not
+    // reallocated) on each call so a steady-state rebuild allocates no new collections; they hold no
+    // state between calls. UpdateChildren is never called reentrantly on the same instance, so sharing
+    // these per-instance buffers is safe.
+    private readonly List<Element> _newChildrenScratch = new();
+    private readonly HashSet<Element> _matchedScratch = new();
+    private readonly Dictionary<object, Element> _keyedScratch = new();
 
     public RenderElement(Widget widget)
         : base(widget)
@@ -107,23 +113,25 @@ public class RenderElement : Element
     }
 
     /// <summary>
-    /// Update child with keyed reconcile.
-    /// Unmount the remaining old entity.
-    /// Derivative (<see cref="ButtonElement"/>protected so that state builders, etc.) can be called when the state changes.
+    /// Updates children via keyed reconciliation, unmounting any old elements that were not matched.
+    /// Protected so that derived classes (such as <see cref="ButtonElement"/>, for state-driven builders) can call
+    /// it when their state changes.
     /// </summary>
     protected void UpdateChildren(IReadOnlyList<Widget> newWidgets)
     {
         var oldChildren = _children;
-        var newChildren = new List<Element>(newWidgets.Count);
-        var matched = new HashSet<Element>();
+        var newChildren = _newChildrenScratch;
+        var matched = _matchedScratch;
+        var keyed = _keyedScratch;
+        newChildren.Clear();
+        matched.Clear();
+        keyed.Clear();
 
-        Dictionary<object, Element>? keyed = null;
         for (int i = 0; i < oldChildren.Count; i++)
         {
             object? key = oldChildren[i].Widget.Key;
             if (key is not null)
             {
-                keyed ??= new Dictionary<object, Element>();
                 keyed[key] = oldChildren[i];
             }
         }
@@ -134,7 +142,7 @@ public class RenderElement : Element
             Widget nw = newWidgets[i];
             Element? reuse = null;
 
-            if (nw.Key is not null && keyed is not null
+            if (nw.Key is not null
                 && keyed.TryGetValue(nw.Key, out Element? keyedMatch)
                 && Widget.CanUpdate(keyedMatch.Widget, nw)
                 && matched.Add(keyedMatch))

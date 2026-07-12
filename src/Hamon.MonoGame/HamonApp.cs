@@ -9,12 +9,12 @@ using XnaColor = Microsoft.Xna.Framework.Color;
 namespace Hamon.MonoGame;
 
 /// <summary>
-/// <see cref="HamonApp"/>Build options.
-/// Things that can be changed when running a theme etc.<see cref="HamonApp.Theme"/>It can be replaced later with properties such as.
+/// Build options for <see cref="HamonApp"/>. Values that can also be changed at runtime, such as the
+/// theme, can be set here initially and replaced later via properties like <see cref="HamonApp.Theme"/>.
 /// </summary>
 public sealed class HamonAppOptions
 {
-    /// <summary>Font (TTF/OTF) byte string. <see cref="FontPath"/>→HAMON_FONT→adjacent *.ttf→OS font is resolved in this order.</summary>
+    /// <summary>Font (TTF/OTF) bytes, tried first. If not set (or unreadable), resolution falls through in order: <see cref="FontPath"/> → the HAMON_FONT environment variable → an adjacent *.ttf file → an OS font.</summary>
     public byte[]? Font { get; init; }
 
     /// <summary>Font file path (TTF/OTF).</summary>
@@ -23,28 +23,28 @@ public sealed class HamonAppOptions
     /// <summary>Glyph raster resolution factor (1-4, default 3 = high quality). </summary>
     public int FontQuality { get; init; } = 3;
 
-    /// <summary>Completely replace the text renderer (for advanced users. Skip font resolution when specified).</summary>
+    /// <summary>Completely replaces the text renderer (advanced use; when set, font resolution is skipped).</summary>
     public ITextRenderer? TextRenderer { get; init; }
 
-    /// <summary>Enable IME (preedit + candidate position during conversion) (default true; DesktopGL/SDL required).</summary>
+    /// <summary>Enables IME support (preedit text and candidate window positioning during conversion). Default true; requires DesktopGL/SDL.</summary>
     public bool EnableIme { get; init; } = true;
 
-    /// <summary><see cref="HamonApp.Draw"/>Clear the screen with (default true). </summary>
+    /// <summary>Whether <see cref="HamonApp.Draw"/> clears the screen before rendering (default true).</summary>
     public bool ClearBackground { get; init; } = true;
 
-    /// <summary>Clear color (if not specified, the background color of the actual theme).</summary>
+    /// <summary>Clear color. If not specified, the effective theme's background color is used.</summary>
     public Color? ClearColor { get; init; }
 
-    /// <summary>Initial theme (ripple light if not specified)<see cref="HamonTheme.Default"/>）。</summary>
+    /// <summary>Initial theme. Defaults to <see cref="HamonTheme.Default"/> (the light theme) if not specified.</summary>
     public HamonTheme? Theme { get; init; }
 
     /// <summary>Dark color scheme (opt-in). </summary>
     public HamonTheme? DarkTheme { get; init; }
 
-    /// <summary>Theme mode (default<see cref="Widgets.ThemeMode.System"/>）。</summary>
+    /// <summary>Theme mode (default <see cref="Widgets.ThemeMode.System"/>).</summary>
     public ThemeMode ThemeMode { get; init; } = ThemeMode.System;
 
-    /// <summary>Wheel 1 notch → px magnification (default 0.22).</summary>
+    /// <summary>Multiplier converting one mouse wheel notch to pixels (default 0.22).</summary>
     public float WheelScale { get; init; } = 0.22f;
 
     // --- ウィンドウ。すべて null 許容＝「未指定」。既存 <see cref="Game"/> 同居版では、未指定の項目は適用せず
@@ -60,31 +60,32 @@ public sealed class HamonAppOptions
     /// <summary>Whether to allow the user to resize the window. </summary>
     public bool? AllowResize { get; init; }
 
-    /// <summary>window title. </summary>
+    /// <summary>Window title.</summary>
     public string? WindowTitle { get; init; }
 
-    /// <summary>Full screen display. </summary>
+    /// <summary>Whether to display full screen.</summary>
     public bool? Fullscreen { get; init; }
 
-    /// <summary>Vertical sync. </summary>
+    /// <summary>Whether to enable vertical sync.</summary>
     public bool? VSync { get; init; }
 
     /// <summary>Whether to display the mouse cursor. </summary>
     public bool? MouseVisible { get; init; }
 
-    /// <summary>Is it a fixed time step (false = real DT drive, animation follows high refresh rate)? </summary>
+    /// <summary>Whether to use a fixed time step (false = real delta-time driven, so animation follows high refresh rates).</summary>
     public bool? FixedTimeStep { get; init; }
 }
 
 /// <summary>
-/// A high-level facade connecting MonoGame and Hamon. <see cref="HamonRoot"/> /
-/// Input (mouse, keyboard, gamepad, IME), HiDPI tracking, and background clear are wired internally,
-/// <see cref="Update"/>and<see cref="Draw"/>It works just by calling. <see cref="Game"/>Use to coexist with.
-/// When fine control is required<see cref="Ui"/>（<see cref="HamonRoot"/>all APIs) and<see cref="Input"/>touch directly.
+/// A high-level facade connecting MonoGame and Hamon. Input (mouse, keyboard, gamepad, IME), HiDPI
+/// tracking, and background clearing are wired up internally, so it works just by calling
+/// <see cref="Update"/> and <see cref="Draw"/>. Use this to let Hamon coexist with an existing
+/// <see cref="Game"/>. When finer control is needed, access <see cref="Ui"/> (all <see cref="HamonRoot"/>
+/// APIs) and <see cref="Input"/> directly.
 /// </summary>
 /// <remarks>
-/// <para>Because it requires a GraphicsDevice<see cref="Game.LoadContent"/>(below).</para>
-/// <para>example:<c>_app = new HamonApp(this, () =&gt; new MyRoot()) { Theme = HamonTheme.Dark };</c></para>
+/// <para>Because a <c>GraphicsDevice</c> is required, construct this from <see cref="Game.LoadContent"/> or later.</para>
+/// <para>Example: <c>_app = new HamonApp(this, () =&gt; new MyRoot()) { Theme = HamonTheme.Dark };</c></para>
 /// </remarks>
 public sealed class HamonApp : IDisposable
 {
@@ -97,13 +98,13 @@ public sealed class HamonApp : IDisposable
     private readonly bool _ownsText;
     private bool _disposed;
 
-    /// <summary>existing<see cref="Game"/>Let them live together (<c>game.GraphicsDevice</c>/<c>game.Window</c>). </summary>
+    /// <summary>Coexists with an existing <see cref="Game"/> (uses its <c>game.GraphicsDevice</c>/<c>game.Window</c>).</summary>
     public HamonApp(Game game, Func<Widget>? root = null, HamonAppOptions? options = null)
         : this(game, GraphicsOf(game), game.Window, root, options)
     {
     }
 
-    /// <summary>A low-level version that builds directly from GraphicsDevices (and any Windows). </summary>
+    /// <summary>A low-level constructor that builds directly from a <c>GraphicsDevice</c> (and an optional <c>GameWindow</c>).</summary>
     public HamonApp(GraphicsDevice device, GameWindow? window = null, Func<Widget>? root = null, HamonAppOptions? options = null)
         : this(null, device, window, root, options)
     {
@@ -177,10 +178,10 @@ public sealed class HamonApp : IDisposable
         }
     }
 
-    /// <summary>subordinate<see cref="HamonRoot"/>(Escape hatch for all APIs: Overlay/Navigator/Focus, etc.).</summary>
+    /// <summary>The underlying <see cref="HamonRoot"/> (an escape hatch for all its APIs: Overlay, Navigator, Focus, etc.).</summary>
     public HamonRoot Ui { get; }
 
-    /// <summary>input pump.<see cref="HamonInput.OnBack"/>``Return'' processing is assigned to .</summary>
+    /// <summary>The input pump. Its <see cref="HamonInput.OnBack"/> handler is exposed via the <see cref="OnBack"/> property below.</summary>
     public HamonInput Input { get; }
 
     /// <summary>Current light (default) theme. </summary>
@@ -211,19 +212,19 @@ public sealed class HamonApp : IDisposable
         set => Input.OnBack = value;
     }
 
-    /// <summary><see cref="Draw"/>Do you want to clear the background?</summary>
+    /// <summary>Whether <see cref="Draw"/> should clear the background.</summary>
     public bool ClearBackground { get; set; }
 
-    /// <summary>Clear color (if null, the background of the actual theme).</summary>
+    /// <summary>Clear color. If null, uses the effective theme's background color.</summary>
     public Color? ClearColor { get; set; }
 
-    /// <summary>Replace the root widget (builder returns the same tree every time).</summary>
+    /// <summary>Replaces the root widget with a builder function (called to (re)build the tree).</summary>
     public void SetRoot(Func<Widget> root) => Ui.SetRoot(root);
 
-    /// <summary>Replace the root widget (fixed tree).</summary>
+    /// <summary>Replaces the root widget with a fixed widget instance (wrapped as a builder that always returns the same instance).</summary>
     public void SetRoot(Widget root) => Ui.SetRoot(() => root);
 
-    /// <summary>Take input, update HiDPI ratio and size, then update UI.<see cref="Game.Update"/>call from.</summary>
+    /// <summary>Polls input, updates the HiDPI ratio and size, then updates the UI. Call from <see cref="Game.Update"/>.</summary>
     public void Update(GameTime gameTime)
     {
         Input.Update();
@@ -247,7 +248,7 @@ public sealed class HamonApp : IDisposable
         Ui.Update(size, (float)gameTime.ElapsedGameTime.TotalSeconds);
     }
 
-    /// <summary>Background clear (optional) + UI drawing.<see cref="Game.Draw"/>call from.</summary>
+    /// <summary>Clears the background (optional) and draws the UI. Call from <see cref="Game.Draw"/>.</summary>
     public void Draw(GameTime gameTime)
     {
         if (ClearBackground)
@@ -285,18 +286,20 @@ public sealed class HamonApp : IDisposable
     {
         ArgumentNullException.ThrowIfNull(game);
         return game.GraphicsDevice
-            ?? throw new InvalidOperationException("Hamon: GraphicsDevice が未生成です。HamonApp は LoadContent 以降で生成してください。");
+            ?? throw new InvalidOperationException("Hamon: GraphicsDevice has not been created yet. Access HamonApp from LoadContent or later.");
     }
 
-    /// <summary><see cref="Game"/>holds<see cref="GraphicsDeviceManager"/>(via service). </summary>
+    /// <summary>Retrieves the <see cref="GraphicsDeviceManager"/> held by a <see cref="Game"/> (via its service container).</summary>
     internal static GraphicsDeviceManager? ManagerOf(Game game) =>
         game.Services.GetService(typeof(IGraphicsDeviceManager)) as GraphicsDeviceManager;
 
     /// <summary>
-    /// Applies only the specified (non-null) window options.
-    /// Use the original value as is.<paramref name="manager"/>If there is no size/full screen/VSync will not be applied (cannot download = does nothing).
-    /// <paramref name="applyChanges"/>Only when there is a difference in size/fullscreen/VSync<see cref="GraphicsDeviceManager.ApplyChanges"/>do
-    /// (before device generation<see cref="HamonGame"/>In ctor, just set false=preferred).
+    /// Applies only the specified (non-null) window options; unspecified options are left at their current
+    /// value. If <paramref name="manager"/> is null, size/fullscreen/VSync are not applied (there's nothing
+    /// to apply them to, so this is a no-op for those). When <paramref name="applyChanges"/> is true,
+    /// <see cref="GraphicsDeviceManager.ApplyChanges"/> is called, but only if size, fullscreen, or VSync
+    /// actually changed. (Before the device is created — i.e. in <see cref="HamonGame"/>'s constructor —
+    /// pass false, which is preferred there.)
     /// </summary>
     internal static void ApplyWindow(Game game, GameWindow? window, GraphicsDeviceManager? manager, HamonAppOptions o, bool applyChanges)
     {
@@ -374,7 +377,7 @@ public sealed class HamonApp : IDisposable
         }
 
         throw new InvalidOperationException(
-            "Hamon: 使用可能なフォントが見つかりません。HamonAppOptions.Font / FontPath か 環境変数 HAMON_FONT で TTF/OTF を指定するか、" +
-            "実行ファイルと同じ場所に *.ttf を配置してください。");
+            "Hamon: No usable font was found. Specify a TTF/OTF via HamonAppOptions.Font / FontPath or the HAMON_FONT " +
+            "environment variable, or place a *.ttf next to the executable.");
     }
 }

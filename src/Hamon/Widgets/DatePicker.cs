@@ -3,14 +3,17 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Calendar date selection (Flutter<c>CalendarDatePicker</c>equivalent).
-/// <see cref="OnDateSelected"/>. <c>UseState</c>).
+/// A calendar-based date picker (equivalent to Flutter's <c>CalendarDatePicker</c>). Tapping a date invokes
+/// <see cref="OnDateSelected"/>; the currently displayed month is held internally via <c>UseState</c>.
 /// </summary>
 public sealed class CalendarDatePicker : HookWidget
 {
     public DateTime? SelectedDate { get; init; }
 
-    /// <summary>The month to display first (if not specified<see cref="SelectedDate"/>, if there is no such thing, the caller<see cref="DateTime.Today"/>etc.).</summary>
+    /// <summary>
+    /// The month to display initially. Falls back to <see cref="SelectedDate"/> if unspecified; if neither is
+    /// set, a fixed default date is used, so callers should pass something like <see cref="DateTime.Today"/>.
+    /// </summary>
     public DateTime? InitialMonth { get; init; }
 
     public Action<DateTime>? OnDateSelected { get; init; }
@@ -109,12 +112,13 @@ public sealed class CalendarDatePicker : HookWidget
     };
 }
 
-/// <summary>To display the date selection dialog<see cref="HamonRoot"/>Expansion.</summary>
+/// <summary>Extension methods on <see cref="HamonRoot"/> for displaying a date selection dialog.</summary>
 public static class DatePickers
 {
     /// <summary>
-    /// Open the calendar dialog and once the date is selected<paramref name="onPicked"/>call and close
-    /// （Flutter <c>showDatePicker</c>equivalent).<paramref name="initial"/>is the month to display first,<paramref name="selected"/>is the day to highlight.
+    /// Opens the calendar dialog and, once a date is selected, calls <paramref name="onPicked"/> and closes the
+    /// dialog (equivalent to Flutter's <c>showDatePicker</c>). <paramref name="initial"/> is the month to display
+    /// first, and <paramref name="selected"/> is the day to highlight.
     /// </summary>
     public static OverlayEntry ShowDatePicker(this HamonRoot root, DateTime initial, Action<DateTime> onPicked, DateTime? selected = null)
     {

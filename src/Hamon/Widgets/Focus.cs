@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>Direction Direction of focus movement (D-pad/stick).</summary>
+/// <summary>Direction of focus movement (D-pad/stick).</summary>
 public enum FocusDirection : byte
 {
     Up,
@@ -13,7 +13,8 @@ public enum FocusDirection : byte
 
 /// <summary>
 /// Physical gamepad buttons (faithful to the actual layout).
-/// （<see cref="GamepadSide"/>). <c>GamePadState</c>etc.) → This enumeration is to be imported by the user.
+/// Left/right distinction (see <see cref="GamepadSide"/>) is handled separately. The user is expected to map
+/// this enum from their platform's input state (e.g. <c>GamePadState</c>).
 /// </summary>
 public enum GamepadButton : byte
 {
@@ -42,8 +43,9 @@ public enum GamepadSide : byte
 }
 
 /// <summary>
-/// Scope of focus (Flutter<c>FocusScopeNode</c>equivalent).<see cref="Trap"/>Time as a modal
-/// Contain directional movement/initial focus internally. <see cref="FocusScope"/>give it to
+/// Scope of focus (equivalent to Flutter's <c>FocusScopeNode</c>). When <see cref="Trap"/> is true, this acts
+/// as a modal, containing directional movement and initial focus within itself. Assigned to a
+/// <see cref="FocusScope"/>.
 /// </summary>
 public sealed class FocusScopeNode
 {
@@ -52,8 +54,8 @@ public sealed class FocusScopeNode
 }
 
 /// <summary>
-/// Focusable target (Flutter<c>FocusNode</c>). <see cref="Focus"/>give it to
-/// OK/Cancel from gamepad/keyboard<see cref="FocusManager"/>Delivered via.
+/// Focusable target (equivalent to Flutter's <c>FocusNode</c>). Assigned to a <see cref="Focus"/> widget.
+/// OK/Cancel and gamepad/keyboard input are delivered through the <see cref="FocusManager"/>.
 /// </summary>
 public sealed class FocusNode
 {
@@ -62,21 +64,21 @@ public sealed class FocusNode
     public bool CanRequestFocus { get; set; } = true;
 
     /// <summary>
-    /// Accessibility labels (descriptions readable by screen readers, etc.).
-    /// <c>SemanticLabel</c>Pour it here. <see cref="FocusManager.Focused"/>Read this.
+    /// Accessibility label (a description readable by screen readers, etc.). Set the widget's
+    /// <c>SemanticLabel</c> here; it is read from <see cref="FocusManager.Focused"/>.
     /// </summary>
     public string? SemanticLabel { get; set; }
 
-    /// <summary>Identifier for explicit link resolution (0=none). <c>(int)</c>You can give it a name by passing it as .</summary>
+    /// <summary>Identifier for explicit link resolution (0 = none). Assign one by passing an <c>(int)</c> value.</summary>
     public int Id { get; set; }
 
     /// <summary>
-    /// Linear traversal (Tab/Shift+Tab=<see cref="FocusManager.MoveNext"/>/<see cref="FocusManager.MovePrevious"/>) order.
-    /// The smaller the better. <c>FocusTraversalOrder</c>equivalent).
+    /// Order for linear traversal (Tab/Shift+Tab = <see cref="FocusManager.MoveNext"/>/<see cref="FocusManager.MovePrevious"/>).
+    /// Lower values come first (equivalent to <c>FocusTraversalOrder</c>).
     /// </summary>
     public int Order { get; set; }
 
-    /// <summary>Explicit upward movement destination Id (0=auto neighborhood). </summary>
+    /// <summary>Explicit upward movement destination Id (0 = automatic neighbor resolution).</summary>
     public int NavUp { get; set; }
 
     public int NavDown { get; set; }
@@ -94,26 +96,26 @@ public sealed class FocusNode
         _ => 0,
     };
 
-    /// <summary>Press any physical button (all buttons). </summary>
+    /// <summary>Press any physical button (all buttons).</summary>
     public Action<GamepadButton>? OnButtonDown { get; set; }
 
     /// <summary>Release any physical button.</summary>
     public Action<GamepadButton>? OnButtonUp { get; set; }
 
     /// <summary>
-    /// Automatic repeat when pressed (equivalent to key repeat).
-    /// （<see cref="HamonRoot"/>but<see cref="GamepadHoldSettings"/>Shipping according to ).
-    /// Since it is used to move focus by default, non-directional button repeats will arrive here.
+    /// Automatic repeat while held down (equivalent to key repeat), delivered by <see cref="HamonRoot"/>
+    /// according to <see cref="GamepadHoldSettings"/>. Since directional buttons move focus by default, only
+    /// non-directional button repeats arrive here.
     /// </summary>
     public Action<GamepadButton>? OnButtonRepeat { get; set; }
 
-    /// <summary>Long press (<see cref="GamepadHoldSettings.LongPressDuration"/>(held for seconds) and fires only once.</summary>
+    /// <summary>Long press, held for <see cref="GamepadHoldSettings.LongPressDuration"/> seconds; fires only once.</summary>
     public Action<GamepadButton>? OnButtonLongPress { get; set; }
 
-    /// <summary>Analog value of the trigger (0..1). </summary>
+    /// <summary>Analog value of the trigger (0..1).</summary>
     public Action<GamepadSide, float>? OnTrigger { get; set; }
 
-    /// <summary>Analog value of the stick (-1..1 for each axis). </summary>
+    /// <summary>Analog value of the stick (-1..1 for each axis).</summary>
     public Action<GamepadSide, Vec2>? OnStick { get; set; }
 
     /// <summary>Convenient shortcut when pressing OK (default binding Activate button).</summary>
@@ -124,7 +126,7 @@ public sealed class FocusNode
 
     public Action<bool>? OnFocusChange { get; set; }
 
-    /// <summary>Confirmed character input (<c>TextField</c>etc.). </summary>
+    /// <summary>Confirmed character input (e.g. <c>TextField</c>).</summary>
     public Action<char>? OnTextInput { get; set; }
 
     /// <summary>Edit keys (Backspace/Delete/cursor movement/Enter, etc.).</summary>
@@ -137,7 +139,7 @@ public sealed class FocusNode
     public Action<string, int>? OnComposition { get; set; }
 }
 
-/// <summary>Control keys for text editing (non-character operations). </summary>
+/// <summary>Control keys for text editing (non-character operations).</summary>
 public enum TextEditKey : byte
 {
     Backspace,
@@ -179,8 +181,9 @@ public enum TextEditKey : byte
 }
 
 /// <summary>
-/// Controls focus registration, current location, direction movement, OK/Cancel delivery (equivalent to Flutter's FocusManager + direction traversal).
-/// The rectangle is obtained each time from the provider at the time of registration (after layout<see cref="LayoutNode.Bounds"/>).
+/// Controls focus registration, current location, directional movement, and OK/Cancel delivery (equivalent to
+/// Flutter's FocusManager plus directional traversal). The bounding rectangle is obtained on demand from the
+/// provider supplied at registration time (post-layout <see cref="LayoutNode.Bounds"/>).
 /// </summary>
 public sealed class FocusManager
 {
@@ -190,8 +193,8 @@ public sealed class FocusManager
     public FocusNode? Focused { get; private set; }
 
     /// <summary>
-    /// Debug dump of registered focus node (mark in focus, rectangle, traversability, trap affiliation).
-    /// One node per row.
+    /// Debug dump of registered focus nodes (focus marker, rectangle, traversability, trap affiliation), one
+    /// node per row.
     /// </summary>
     public string DumpFocusTree()
     {
@@ -234,7 +237,7 @@ public sealed class FocusManager
         node.OnFocusChange?.Invoke(true);
     }
 
-    /// <summary>Deliver physical button presses to the current focus (raw). </summary>
+    /// <summary>Deliver physical button presses to the current focus (raw).</summary>
     public void DispatchButtonDown(GamepadButton button) => Focused?.OnButtonDown?.Invoke(button);
 
     /// <summary>Deliver physical button release to currently focused (raw).</summary>
@@ -258,7 +261,7 @@ public sealed class FocusManager
     /// <summary>Fires a convenience shortcut for Cancel (Dismiss).</summary>
     public void Dismiss() => Focused?.OnDismiss?.Invoke();
 
-    /// <summary>Move to the nearest focusable in the direction. </summary>
+    /// <summary>Move to the nearest focusable element in the given direction.</summary>
     public bool MoveFocus(FocusDirection direction)
     {
         if (_entries.Count == 0)
@@ -327,12 +330,13 @@ public sealed class FocusManager
     }
 
     /// <summary>
-    /// Move to the next focus with linear traversal (Tab). <see cref="FocusNode.Order"/>→ Registration order.
-    /// Make it possible to navigate through the entire UI using the keyboard alone (in an environment without direction keys).
+    /// Move to the next focus target using linear traversal (Tab), ordered by <see cref="FocusNode.Order"/> and
+    /// then registration order. This makes it possible to navigate the entire UI with the keyboard alone, in
+    /// environments without direction keys.
     /// </summary>
     public bool MoveNext() => MoveLinear(1);
 
-    /// <summary>Move to previous focus with linear traversal (Shift+Tab). </summary>
+    /// <summary>Move to the previous focus target using linear traversal (Shift+Tab).</summary>
     public bool MovePrevious() => MoveLinear(-1);
 
     private bool MoveLinear(int dir)
@@ -423,7 +427,7 @@ public sealed class FocusManager
         }
     }
 
-    /// <summary>Load a focus scope (modal, etc.).<see cref="FocusScopeNode.Trap"/>Time confines movement inside.</summary>
+    /// <summary>Push a focus scope (modal, etc.). When <see cref="FocusScopeNode.Trap"/> is true, movement is confined inside it.</summary>
     internal void PushScope(FocusScopeNode scope)
     {
         if (scope.Trap)
@@ -432,7 +436,7 @@ public sealed class FocusManager
         }
     }
 
-    /// <summary>Lower the focus scope. </summary>
+    /// <summary>Pop the focus scope.</summary>
     internal void PopScope(FocusScopeNode scope)
     {
         if (scope.Trap)
@@ -471,9 +475,9 @@ public sealed class FocusManager
     }
 
     /// <summary>
-    /// If there is an active trap (modal), do not move focus to nodes outside of it.
-    /// (Prevent it from leaking out of the modal with tap/programmatic RequestFocus).
-    /// (Trap matching is done in the Register immediately after).
+    /// If there is an active trap (modal), focus must not move to nodes outside of it (this prevents focus
+    /// from leaking out of the modal via tap or programmatic RequestFocus). Trap matching for newly registered
+    /// nodes is handled separately, immediately in Register.
     /// </summary>
     private bool EligibleForFocus(FocusNode node)
     {
@@ -532,7 +536,7 @@ public sealed class FocusManager
         return null;
     }
 
-    /// <summary>The rectangle of the currently focused node (after layout). </summary>
+    /// <summary>The rectangle of the currently focused node (after layout).</summary>
     internal Rect? FocusedNodeBounds() => Focused is null ? null : BoundsOf(Focused);
 
     private Rect BoundsOf(FocusNode node)
@@ -582,21 +586,21 @@ public sealed class FocusManager
 
         public Func<Rect> Bounds { get; }
 
-        /// <summary>The focus scope to which it belongs (null = global). </summary>
+        /// <summary>The focus scope to which it belongs (null = global).</summary>
         public FocusScopeNode? Scope { get; }
 
         /// <summary>The nearest scroll element to which it belongs (for scroll-to-focus, otherwise null).</summary>
         public IScrollable? Scroll { get; }
 
-        /// <summary>Is it subject to directional traversal? (Even if set to false, explicit link/tap focus is possible).</summary>
+        /// <summary>Whether this entry participates in directional traversal (even when false, explicit link navigation and tap-to-focus still work).</summary>
         public bool Traversable { get; }
     }
 }
 
 /// <summary>
-/// Settings for which physical button to assign to focus movement/OK/Cancel (specified in initial settings).
-/// Default is D-pad up/down/left/right, A=Activate, B=Dismiss.
-/// <see cref="HamonRoot.HandleButtonDown"/>without using<see cref="FocusManager.MoveFocus"/>Call /Dispatch directly.
+/// Settings for which physical buttons are assigned to focus movement and OK/Cancel (specify during initial
+/// setup). Defaults are D-pad up/down/left/right, A = Activate, B = Dismiss. If you are not using
+/// <see cref="HamonRoot.HandleButtonDown"/>, call <see cref="FocusManager.MoveFocus"/>/Dispatch directly instead.
 /// </summary>
 public sealed class FocusBindings
 {
@@ -614,8 +618,8 @@ public sealed class FocusBindings
 }
 
 /// <summary>
-/// Settings for gamepad button press and hold behavior (automatic repeat/long press).<see cref="HamonRoot.Hold"/>Adjust with.
-/// Repeat is equivalent to key repeat (initial delay → fixed interval).
+/// Settings for gamepad button press-and-hold behavior (automatic repeat/long press); adjust via
+/// <see cref="HamonRoot.Hold"/>. Repeat is equivalent to key repeat (initial delay, then a fixed interval).
 /// </summary>
 public sealed class GamepadHoldSettings
 {
@@ -629,18 +633,19 @@ public sealed class GamepadHoldSettings
     public float RepeatInterval { get; set; } = 0.08f;
 
     /// <summary>
-    /// If true (default), repeat will be applied only to direction buttons = auto-navigation of focus.
-    /// <see cref="FocusNode.OnButtonRepeat"/>(prevents accidental firing).
+    /// If true (default), auto-repeat only applies to directional buttons (i.e. focus auto-navigation),
+    /// preventing <see cref="FocusNode.OnButtonRepeat"/> from firing accidentally for other buttons.
     /// </summary>
     public bool RepeatDirectionalOnly { get; set; } = true;
 
-    /// <summary>Number of seconds to hold long press judgment (default 0.5). </summary>
+    /// <summary>Number of seconds the button must be held to register a long press (default 0.5).</summary>
     public float LongPressDuration { get; set; } = 0.5f;
 }
 
 /// <summary>
-/// Make child focusable (Flutter<c>Focus</c>）。<see cref="FocusManager"/>Register to
-/// Draw a frame (ring) when focusing.<see cref="Autofocus"/>to get the initial focus.
+/// Makes its child focusable (equivalent to Flutter's <c>Focus</c>), registering with the
+/// <see cref="FocusManager"/> and drawing a focus ring while focused. Set <see cref="Autofocus"/> to obtain
+/// initial focus.
 /// </summary>
 public sealed class Focus : Widget, IRenderConfig
 {
@@ -652,7 +657,7 @@ public sealed class Focus : Widget, IRenderConfig
 
     public Color RingColor { get; init; } = new(120, 180, 255);
 
-    /// <summary>Individual focus appearance (border + arbitrary background/rounded corners). <see cref="RingColor"/>More priority. </summary>
+    /// <summary>Individual focus appearance (border plus optional background/rounded corners); takes priority over <see cref="RingColor"/>.</summary>
     public FocusDecoration? Decoration { get; init; }
 
     Style IRenderConfig.Style => new() { Kind = LayoutKind.Box };
@@ -663,7 +668,7 @@ public sealed class Focus : Widget, IRenderConfig
     public override Element CreateElement() => new FocusElement(this);
 }
 
-/// <summary><see cref="Focus"/>holding entity. <see cref="FocusManager"/>Register to and draw a focus frame.</summary>
+/// <summary>The element backing <see cref="Focus"/>. Registers with the <see cref="FocusManager"/> and draws a focus frame.</summary>
 internal sealed class FocusElement : RenderElement
 {
     // 登録した FocusNode を Mount 時に捕捉する。build が毎回 `new Focus { Node = new() }` を返しても
@@ -724,9 +729,9 @@ internal sealed class FocusElement : RenderElement
 }
 
 /// <summary>
-/// Group child focus together (Flutter<c>FocusScope</c>）。<see cref="Trap"/>(default true)
-/// Becomes a modal focus trap, trapping directional movement/initial focus inside this.
-/// Wrap the dialog/bottom sheet when taking it out.
+/// Groups child focus nodes together (equivalent to Flutter's <c>FocusScope</c>). When <see cref="Trap"/>
+/// (default true), this becomes a modal focus trap, confining directional movement and initial focus inside
+/// it. Wrap dialogs/bottom sheets with this when presenting them.
 /// </summary>
 public sealed class FocusScope : Widget, IRenderConfig
 {
@@ -746,7 +751,7 @@ public sealed class FocusScope : Widget, IRenderConfig
     public override Element CreateElement() => new FocusScopeElement(this);
 }
 
-/// <summary><see cref="FocusScope"/>holding entity. </summary>
+/// <summary>The element backing <see cref="FocusScope"/>.</summary>
 internal sealed class FocusScopeElement : RenderElement
 {
     // PushScope した FocusScopeNode を Mount 時に捕捉する。build が毎リビルドで `new FocusScope { Node = new() }`

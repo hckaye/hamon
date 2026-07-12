@@ -20,7 +20,7 @@ public sealed class DebugOverlay : Widget
     public override Element CreateElement() => new DebugOverlayElement(this);
 }
 
-/// <summary><see cref="DebugOverlay"/>holding entity. </summary>
+/// <summary>The element that holds a <see cref="DebugOverlay"/>.</summary>
 internal sealed class DebugOverlayElement : Element
 {
     private const float LineHeight = 16f;

@@ -2,7 +2,7 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>Border color and thickness (Flutter<c>BorderSide</c>equivalent).<see cref="ButtonStyle.Side"/>Solve the problem by state.</summary>
+/// <summary>Border color and thickness (equivalent to Flutter's <c>BorderSide</c>). Resolved by state via <see cref="ButtonStyle.Side"/>.</summary>
 public readonly struct BorderSide
 {
     public BorderSide(Color color, float width)
@@ -17,24 +17,25 @@ public readonly struct BorderSide
 }
 
 /// <summary>
-/// Button state animation settings (Flutter<c>ButtonStyle.animationDuration</c>etc. + expansion).
-/// Specify the scale at press/hover/focus and the tracking speed of the state layer.
+/// Button state animation settings (equivalent to Flutter's <c>ButtonStyle.animationDuration</c> and related
+/// properties, plus extensions). Specifies the scale at press/hover/focus and the tracking speed of the state layer.
 /// </summary>
 public sealed class ButtonAnimationStyle
 {
-    /// <summary>State layer/scale tracking speed (1/sec, the larger the speed, the faster it is).<see cref="Curve"/>Used for exponential tracking when unspecified.</summary>
+    /// <summary>State layer/scale tracking speed in 1/sec (larger values track faster). Used for exponential tracking when <see cref="Curve"/> is unspecified.</summary>
     public float Rate { get; init; } = 18f;
 
     /// <summary>
-    /// Easing curve of state transition (if specified, the easing curve will be<see cref="Duration"/>curve interpolation from→to in seconds).
-    /// If unspecified (null)<see cref="Rate"/>exponential tracking.
+    /// Easing curve for state transitions. If specified, the transition interpolates from the previous value
+    /// to the target value over <see cref="Duration"/> seconds using this curve. If unspecified (null), the
+    /// transition instead uses exponential tracking driven by <see cref="Rate"/>.
     /// </summary>
     public Curve? Curve { get; init; }
 
-    /// <summary><see cref="Curve"/>Transition time (seconds) at specified time.</summary>
+    /// <summary>Transition time in seconds, used when <see cref="Curve"/> is specified.</summary>
     public float Duration { get; init; } = 0.15f;
 
-    /// <summary>Scale when pressed (1 = no change, slightly depressed at 0.96 etc.).</summary>
+    /// <summary>Scale when pressed (1 = no change; e.g. 0.96 for a slight press-in effect).</summary>
     public float PressedScale { get; init; } = 1f;
 
     /// <summary>Scale when hovering.</summary>
@@ -43,7 +44,7 @@ public sealed class ButtonAnimationStyle
     /// <summary>Scale at focus.</summary>
     public float FocusedScale { get; init; } = 1f;
 
-    /// <summary>Opacity when pressed (1=no change; 0.9 etc. slightly sinks).</summary>
+    /// <summary>Opacity when pressed (1 = no change; e.g. 0.9 for a slight dimming).</summary>
     public float PressedOpacity { get; init; } = 1f;
 
     /// <summary>Opacity when hovering.</summary>
@@ -54,9 +55,10 @@ public sealed class ButtonAnimationStyle
 }
 
 /// <summary>
-/// Button appearance by state (Flutter<c>ButtonStyle</c>equivalent). <see cref="WidgetStateProperty{T}"/>in
-/// Resolves according to state (hover/focus/pressed/disabled/selected).
-/// <para>Simple generation is<see cref="Button.StyleFrom"/>. <see cref="Button.Builder"/>(Hamon extension).</para>
+/// Button appearance by state (equivalent to Flutter's <c>ButtonStyle</c>). Each property is a
+/// <see cref="WidgetStateProperty{T}"/> that resolves according to state (hover/focus/pressed/disabled/selected).
+/// <para>For simple generation, see <see cref="Button.StyleFrom"/>. For full custom appearance, see
+/// <see cref="Button.Builder"/> (a Hamon extension).</para>
 /// </summary>
 public sealed class ButtonStyle
 {
@@ -64,12 +66,12 @@ public sealed class ButtonStyle
     public WidgetStateProperty<Color?>? BackgroundColor { get; init; }
 
     /// <summary>
-    /// Background image skin (by state/9-slice/sprite).
-    /// Draw this image instead (assuming the sprite itself represents the state).
+    /// Background image skin (by state; supports 9-slice/sprite).
+    /// When specified, this image is drawn instead of a solid color, assuming the sprite itself represents the state.
     /// </summary>
     public WidgetStateProperty<ImageSkin?>? BackgroundImage { get; init; }
 
-    /// <summary>Foreground color (text/icon).<see cref="Button"/>but<see cref="BuildContext"/>Supplies the child's default font color via.</summary>
+    /// <summary>Foreground color (text/icon). <see cref="Button"/> supplies this as the child's default font color via <see cref="BuildContext"/>.</summary>
     public WidgetStateProperty<Color?>? ForegroundColor { get; init; }
 
     /// <summary>Color of state layer (hover/focus/pressed layer). </summary>

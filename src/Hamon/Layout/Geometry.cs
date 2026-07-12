@@ -88,7 +88,7 @@ public enum DimensionUnit : byte
     Percent,
 }
 
-/// <summary>Declarative specification of dimensions such as width and height. <see cref="DimensionUnit.Auto"/>。</summary>
+/// <summary>A declarative specification of a dimension such as width or height. See <see cref="DimensionUnit.Auto"/> for the default (auto-sized) case.</summary>
 public readonly struct Dimension : IEquatable<Dimension>
 {
     public DimensionUnit Unit { get; }
@@ -107,8 +107,8 @@ public readonly struct Dimension : IEquatable<Dimension>
     public bool IsAuto => Unit == DimensionUnit.Auto;
 
     /// <summary>
-    /// parent range<paramref name="parentExtent"/>Resolves for (px).
-    /// If Auto or Percent and the parent range is non-finite, returns null as unresolvable.
+    /// Resolves this dimension to pixels for the given <paramref name="parentExtent"/> (parent range).
+    /// If the unit is Auto or Percent and the parent range is not finite, returns null to indicate it cannot be resolved.
     /// </summary>
     public float? Resolve(float parentExtent) => Unit switch
     {

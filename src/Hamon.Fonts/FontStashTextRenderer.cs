@@ -11,13 +11,14 @@ using XnaVector2 = Microsoft.Xna.Framework.Vector2;
 namespace Hamon.Fonts;
 
 /// <summary>
-/// FontStashSharp (TTF dynamic glyph atlas) in MonoGame<see cref="SpriteBatch"/>bridge to
-/// <see cref="ITextRenderer"/>Implementation (text layer on MonoGame backend side). <see cref="MonoGamePainter"/>
-/// (characters are also stacked in the same Begin batch).
+/// <see cref="ITextRenderer"/> implementation that bridges FontStashSharp (a TTF dynamic glyph atlas) with
+/// MonoGame's <see cref="SpriteBatch"/>. This is the text layer on the MonoGame backend side; it shares the
+/// same <see cref="SpriteBatch"/> instance as <see cref="MonoGamePainter"/>, so glyphs are drawn within the
+/// same Begin/End batch.
 /// </summary>
 public sealed class FontStashTextRenderer : ITextRenderer, IFontStashRenderer, IDisposable
 {
-    /// <summary>Default font (<see cref="ITextRenderer"/>(if font is not specified).</summary>
+    /// <summary>Name of the default font, used by <see cref="ITextRenderer"/> when no font is specified.</summary>
     public const string DefaultFont = "";
 
     private readonly MonoGameTextureManager _textureManager;
@@ -27,8 +28,8 @@ public sealed class FontStashTextRenderer : ITextRenderer, IFontStashRenderer, I
     private readonly Dictionary<string, FontSystem> _fonts = new();
 
     /// <param name="resolutionFactor">
-    /// Glyph rasterization resolution magnification.
-    /// Atlas/cost increase.
+    /// Glyph rasterization resolution multiplier. Higher values improve sharpness at the cost of a larger
+    /// atlas and higher memory usage.
     /// </param>
     public FontStashTextRenderer(GraphicsDevice graphicsDevice, byte[] fontData, SpriteBatch batch, int resolutionFactor = 3)
     {
@@ -41,8 +42,9 @@ public sealed class FontStashTextRenderer : ITextRenderer, IFontStashRenderer, I
     }
 
     /// <summary>
-    /// Rebuild glyph atlas after GraphicsDevice reset/lost (discard atlas texture, font
-    /// (reset and re-rasterize on next drawing).<see cref="GraphicsDevice.DeviceReset"/>is automatically called from.
+    /// Rebuilds the glyph atlas after the <see cref="GraphicsDevice"/> is reset or lost: discards the atlas
+    /// texture and resets the fonts so glyphs are re-rasterized on the next draw. Called automatically from
+    /// <see cref="GraphicsDevice.DeviceReset"/>.
     /// </summary>
     public void OnDeviceReset()
     {
@@ -56,15 +58,16 @@ public sealed class FontStashTextRenderer : ITextRenderer, IFontStashRenderer, I
     private void OnDeviceReset(object? sender, System.EventArgs e) => OnDeviceReset();
 
     /// <summary>
-    /// Number of pages in Glyph Atlas (secured by FontStash)<see cref="Texture2D"/>number).
-    /// Monitor it and if it increases unexpectedly (memory pressure), use it to determine whether to warn/regenerate on the application side.
+    /// Number of pages in the glyph atlas (the number of <see cref="Texture2D"/> instances allocated by
+    /// FontStash). Monitor this value; an unexpected increase indicates memory pressure, and applications
+    /// can use it to decide whether to warn or regenerate the atlas.
     /// </summary>
     public int AtlasPageCount => _textureManager.PageCount;
 
-    /// <summary>Total number of bytes in the glyph atlas (RGBA equivalent). </summary>
+    /// <summary>Total size of the glyph atlas in bytes (RGBA-equivalent).</summary>
     public long AtlasByteSize => _textureManager.ByteSize;
 
-    /// <summary>Register a font with a name (<see cref="Text.Font"/>Select by etc. </summary>
+    /// <summary>Registers a font under a name so it can be selected via <see cref="Text.Font"/>, etc.</summary>
     public void AddFont(string name, byte[] fontData)
     {
         var system = new FontSystem(new FontSystemSettings

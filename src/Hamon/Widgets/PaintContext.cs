@@ -3,9 +3,9 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Context to pass to the tree on the drawing pass.
-/// <see cref="IPainter"/>(backend independent). <see cref="ITextRenderer"/>via.
-/// Value type (no additional allocation per frame).
+/// The context passed down the tree during the paint pass. Wraps
+/// <see cref="IPainter"/> (backend-independent) and provides text drawing via
+/// <see cref="ITextRenderer"/>. A value type, so it allocates nothing extra per frame.
 /// </summary>
 public readonly struct PaintContext
 {
@@ -29,10 +29,10 @@ public readonly struct PaintContext
         _rotationPivot = rotationPivot;
     }
 
-    /// <summary>drawing backend.</summary>
+    /// <summary>The drawing backend.</summary>
     public IPainter Painter { get; }
 
-    /// <summary>Text measurement/drawing (without it, the Text widget cannot be drawn).</summary>
+    /// <summary>Text measurement and drawing implementation (without it, the Text widget cannot be drawn).</summary>
     public ITextRenderer? Text { get; }
 
     /// <summary>Current opacity (0..1).</summary>
@@ -44,18 +44,20 @@ public readonly struct PaintContext
     /// <summary>Horizontal scale of the current composite transform.</summary>
     public float ScaleX => _transform.Scale.X;
 
-    /// <summary>Returns the context of child drawing multiplied by opacity (<see cref="Opacity"/>).</summary>
+    /// <summary>Returns a context for drawing children with opacity multiplied by <paramref name="factor"/> (used by the <see cref="Opacity"/> widget).</summary>
     public PaintContext WithOpacity(float factor) =>
         new(Painter, Text, _opacity * Math.Clamp(factor, 0f, 1f), _transform, _rotation, _rotationPivot);
 
-    /// <summary>Returns a context loaded with transformations on child drawings (<see cref="Transform"/>). </summary>
+    /// <summary>Returns a context with an additional transform applied to child drawing (used by the <see cref="Transform"/> widget).</summary>
     internal PaintContext WithTransform(in Transform2D transform) =>
         new(Painter, Text, _opacity, Transform2D.Compose(_transform, transform), _rotation, _rotationPivot);
 
     /// <summary>
-    /// Returns the context loaded with rotation for the child's drawing (<see cref="Transform"/>rotation).<paramref name="pivotLocal"/>is the local coordinate fulcrum
-    /// (Copy to device space with current transformation).
-    /// Non-uniform scale + rotation nesting is not applicable (approximation).
+    /// Returns a context with rotation applied for child drawing (used by
+    /// <see cref="Transform"/> rotation). <paramref name="pivotLocal"/> is the pivot
+    /// in local coordinates (converted to device space using the current transform).
+    /// Nesting rotation inside a non-uniform scale is not handled exactly; this is an
+    /// approximation.
     /// </summary>
     internal PaintContext WithRotation(float radians, Vec2 pivotLocal)
     {
@@ -85,22 +87,22 @@ public readonly struct PaintContext
     /// <summary>Applies the current compositing transformation to a point (such as text position).</summary>
     public Vec2 ApplyTransform(Vec2 point) => _transform.Apply(point);
 
-    /// <summary>Apply the current composite transformation to the rectangle and copy it to device space (raw drawing =<see cref="SceneDrawContext"/>etc.)</summary>
+    /// <summary>Applies the current composite transformation to the rectangle, converting it to device space (for low-level drawing such as <see cref="SceneDrawContext"/>).</summary>
     public Rect ApplyTransform(Rect rect) => _transform.Apply(rect);
 
-    /// <summary>Draw text from custom elements (composite transform/opacity/scale).<paramref name="position"/>is the top left of the UI coordinates.</summary>
+    /// <summary>Draws text from custom elements, applying the composite transform, opacity, and scale. <paramref name="position"/> is the top-left corner in UI coordinates.</summary>
     public void DrawText(string text, Vec2 position, float pixelSize, Color color, string? font = null) =>
         Text?.Draw(text, _transform.Apply(position), pixelSize * ScaleY, ApplyOpacity(color), font);
 
     /// <summary>Text dimensions (UI coordinates, unscaled). </summary>
     public Vec2 MeasureText(string text, float pixelSize, string? font = null) => Text?.Measure(text, pixelSize, font) ?? default;
 
-    /// <summary>Stack rectangular clip (return opaque token<see cref="PopClip"/>fart).</summary>
+    /// <summary>Pushes a rectangular clip onto the stack (returns an opaque token to pass to <see cref="PopClip"/>).</summary>
     public object? PushClip(Rect rect) => Painter.PushClip(_transform.Apply(rect));
 
     public void PopClip(object? token) => Painter.PopClip(token);
 
-    /// <summary>Accumulate compositing mode (additive compositing for glow, etc.) Return value token<see cref="PopBlend"/>fart).</summary>
+    /// <summary>Pushes a compositing blend mode (e.g. additive blending for glow effects). Returns an opaque token to pass to <see cref="PopBlend"/>.</summary>
     public object? PushBlend(BlendMode mode) => Painter.PushBlend(mode);
 
     public void PopBlend(object? token) => Painter.PopBlend(token);
@@ -117,7 +119,7 @@ public readonly struct PaintContext
         Painter.FillRect(_transform.Apply(rect), ApplyOpacity(color));
     }
 
-    /// <summary>Paint the rounded rectangle with a single color (the radius is also scaled with the conversion scale). </summary>
+    /// <summary>Paints a rounded rectangle with a single color (the radius is also scaled by the transform's scale).</summary>
     public void FillRoundedRect(Rect rect, Color color, float radius)
     {
         if (_rotation != 0f)
@@ -129,7 +131,7 @@ public readonly struct PaintContext
         Painter.FillRoundedRect(_transform.Apply(rect), ApplyOpacity(color), radius * _transform.Scale.X);
     }
 
-    /// <summary>Draw the entire texture into a rectangle (applying the current transformation, opacity, rotation,<paramref name="tint"/>multiplication).</summary>
+    /// <summary>Draws the entire texture into a rectangle, applying the current transform, opacity, rotation, and multiplying by <paramref name="tint"/>.</summary>
     public void DrawTexture(ITexture texture, Rect dest, Color tint) =>
         DrawTexture(texture, dest, new RectInt(0, 0, texture.Width, texture.Height), tint);
 
@@ -146,9 +148,13 @@ public readonly struct PaintContext
     }
 
     /// <summary>
-    /// Texture with 9-slice (9-patch)<paramref name="dest"/>(Corners are original size, sides are expanded and contracted, and center is both expanded and contracted).
-    /// For windows/button backgrounds/scroll bars, etc.<paramref name="border"/>is the texture frame width (px).<paramref name="source"/>By designation
-    /// A partial area of ​​a sprite sheet can be used as a 9-slice source (the entire texture is unspecified).
+    /// Draws a texture into <paramref name="dest"/> using 9-slice (9-patch) scaling:
+    /// corners keep their original size, edges stretch along one axis, and the center
+    /// stretches along both axes. Useful for window frames, button backgrounds, scroll
+    /// bars, and similar UI chrome. <paramref name="border"/> is the texture's frame
+    /// width in pixels. Specifying <paramref name="source"/> lets a sub-region of a
+    /// sprite sheet be used as the 9-slice source (defaults to the entire texture if
+    /// unspecified).
     /// </summary>
     public void DrawNineSlice(ITexture texture, Rect dest, EdgeInsets border, Color tint, RectInt? source = null)
     {
@@ -181,7 +187,7 @@ public readonly struct PaintContext
         }
     }
 
-    /// <summary>Thickness<paramref name="thickness"/>Draw line segments (for charts/separators/arcs, etc. Apply rotation/scale).</summary>
+    /// <summary>Draws a line segment with the given <paramref name="thickness"/> (for charts, separators, arcs, etc.; applies rotation and scale).</summary>
     public void DrawLine(Vec2 a, Vec2 b, float thickness, Color color)
     {
         Vec2 da = _transform.Apply(a);
@@ -207,13 +213,14 @@ public readonly struct PaintContext
         Painter.FillCircle(c, radius * _transform.Scale.X, ApplyOpacity(color));
     }
 
-    /// <summary>Paint a rectangle with a two-color gradation (ignoring rotation = gradation parallel to the axis).</summary>
+    /// <summary>Paints a rectangle with a two-color gradient (ignores rotation, so the gradient is always axis-aligned).</summary>
     public void FillGradient(Rect rect, Color a, Color b, GradientAxis axis) =>
         Painter.FillGradient(_transform.Apply(rect), ApplyOpacity(a), ApplyOpacity(b), axis);
 
     /// <summary>
-    /// Paint with multi-stop linear gradation. <see cref="FillGradient"/>) and synthesize
-    /// (backend independent). <see cref="GradientStop.Position"/>Assuming ascending order.
+    /// Paints a multi-stop linear gradient by compositing several two-stop gradients
+    /// via <see cref="FillGradient"/> (works without any backend-specific support).
+    /// Assumes the stops' <see cref="GradientStop.Position"/> values are in ascending order.
     /// </summary>
     public void FillGradientStops(Rect rect, GradientStop[] stops, GradientAxis axis)
     {
@@ -257,7 +264,7 @@ public readonly struct PaintContext
         ? new Rect(r.X, r.Y + (r.Height * a), r.Width, r.Height * (b - a))
         : new Rect(r.X + (r.Width * a), r.Y, r.Width * (b - a), r.Height);
 
-    /// <summary>Casts a soft shadow (elevation) behind the rectangle.<paramref name="blur"/>is the width that bleeds outward.</summary>
+    /// <summary>Casts a soft shadow (elevation) behind the rectangle. <paramref name="blur"/> is the width the shadow bleeds outward.</summary>
     public void DrawShadow(Rect rect, Color color, float radius, float blur) =>
         Painter.FillShadow(_transform.Apply(rect), ApplyOpacity(color), radius * _transform.Scale.X, blur * _transform.Scale.X);
 
@@ -285,7 +292,7 @@ public readonly struct PaintContext
         Arc(new Vec2(l + r, bt - r), r, MathF.PI * 0.5f, MathF.PI, thickness, color);      // 左下
     }
 
-    /// <summary>center<paramref name="center"/>·radius<paramref name="radius"/>Draw the arc of as a line segment (ring/arc progress/corner of frame).</summary>
+    /// <summary>Draws an arc centered at <paramref name="center"/> with the given <paramref name="radius"/>, approximated as line segments (used for rings, progress arcs, and rounded frame corners).</summary>
     public void Arc(Vec2 center, float radius, float startRadians, float endRadians, float thickness, Color color, int segments = 12)
     {
         if (segments < 1)

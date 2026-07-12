@@ -16,7 +16,7 @@ public static class TestAssets
                 if (!File.Exists(path))
                 {
                     throw new FileNotFoundException(
-                        $"フォント資産が見つからない: {path}（Hamon.Testing.csproj の TTF コピー設定を確認）");
+                        $"Font asset not found: {path} (check the TTF copy settings in Hamon.Testing.csproj)");
                 }
 
                 CachedFont = File.ReadAllBytes(path);

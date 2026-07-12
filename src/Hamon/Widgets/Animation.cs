@@ -2,10 +2,10 @@ using Hamon.Layout;
 
 namespace Hamon.Widgets;
 
-/// <summary>Easing function (transfer progress of 0..1 to 0..1). <c>Curve</c>Quite a bit.</summary>
+/// <summary>An easing function that maps a progress value in the range 0..1 to a transformed value in 0..1.</summary>
 public delegate float Curve(float t);
 
-/// <summary>Standard easing (static instance = no generation allocation). <c>Curves</c>Submit your name to.</summary>
+/// <summary>Standard easing functions (static instances, so no allocation per use). Named after Flutter's <c>Curves</c> class.</summary>
 public static class Curves
 {
     public static readonly Curve Linear = static t => t;
@@ -13,22 +13,22 @@ public static class Curves
     public static readonly Curve EaseOut = static t => 1f - ((1f - t) * (1f - t));
     public static readonly Curve EaseInOut = static t => t < 0.5f ? 2f * t * t : 1f - (MathF.Pow((-2f * t) + 2f, 2f) / 2f);
 
-    /// <summary>Third-order acceleration (slow → sudden).</summary>
+    /// <summary>Cubic ease-in (starts slow, then accelerates rapidly).</summary>
     public static readonly Curve EaseInCubic = static t => t * t * t;
 
-    /// <summary>3rd order deceleration (sudden → slow; emphasis on stopping).</summary>
+    /// <summary>Cubic ease-out (starts fast, then decelerates smoothly to a stop).</summary>
     public static readonly Curve EaseOutCubic = static t => 1f - MathF.Pow(1f - t, 3f);
 
-    /// <summary>3rd order acceleration/deceleration (the most versatile smoothness).</summary>
+    /// <summary>Cubic ease-in-out (the most versatile, general-purpose smoothing).</summary>
     public static readonly Curve EaseInOutCubic = static t => t < 0.5f ? 4f * t * t * t : 1f - (MathF.Pow((-2f * t) + 2f, 3f) / 2f);
 
-    /// <summary>Material standard (fastOutSlowIn=cubic-bezier(0.4,0,0.2,1)). </summary>
+    /// <summary>The Material Design standard curve (fastOutSlowIn = cubic-bezier(0.4, 0, 0.2, 1)).</summary>
     public static readonly Curve FastOutSlowIn = CubicBezier(0.4f, 0f, 0.2f, 1f);
 
-    /// <summary>Deceleration (coming in and stopping = cubic-bezier(0,0,0.2,1)).</summary>
+    /// <summary>Deceleration curve (starts fast and eases to a stop = cubic-bezier(0, 0, 0.2, 1)).</summary>
     public static readonly Curve Decelerate = CubicBezier(0f, 0f, 0.2f, 1f);
 
-    /// <summary>Go a little too far at the end and go back (overshoot). </summary>
+    /// <summary>Overshoots slightly past the end before settling back (overshoot easing).</summary>
     public static readonly Curve EaseOutBack = static t =>
     {
         const float c1 = 1.70158f;
@@ -54,7 +54,7 @@ public static class Curves
         return (MathF.Pow(2f, -10f * t) * MathF.Sin((t - (p / 4f)) * (2f * MathF.PI) / p)) + 1f;
     };
 
-    /// <summary>Bounce (bounce to the ground and settle down).</summary>
+    /// <summary>Bounce easing (bounces like hitting the ground before settling).</summary>
     public static readonly Curve BounceOut = static t =>
     {
         const float n1 = 7.5625f;
@@ -81,8 +81,8 @@ public static class Curves
     };
 
     /// <summary>
-    /// Generate CSS-like cubic-bezier easing (endpoints fixed at (0,0)/(1,1)). <b>Only once</b>generate and reuse
-    /// (When generated every frame, closure allocation will occur).
+    /// Generates a CSS-like cubic-bezier easing curve (endpoints fixed at (0,0) and (1,1)). <b>Generate it once and
+    /// reuse it</b> — generating a new one every frame causes closure allocations.
     /// </summary>
     public static Curve CubicBezier(float x1, float y1, float x2, float y2) => t =>
     {
@@ -126,20 +126,21 @@ public static class Curves
 }
 
 /// <summary>
-/// Keyframe interpolation (Flutter<c>TweenSequence</c>A fairly lightweight version).
-/// <see cref="Evaluate"/>0..1 Copy the progress to the value. <c>Curve</c>is that<b>Section in front</b>Applies to.
-/// The array is allocated once in the constructor, and the evaluation is zero allocation (linear search of the interval).
+/// Keyframe interpolation (a fairly lightweight version of Flutter's <c>TweenSequence</c>).
+/// <see cref="Evaluate"/> maps a progress value in 0..1 to the interpolated value. Each stop's <c>Curve</c>
+/// applies to the segment leading up to it. The stops array is allocated once in the constructor, and evaluation
+/// is zero-allocation (a linear search over the intervals).
 /// </summary>
 public sealed class TweenSequence
 {
     private readonly (float Time, float Value, Curve Curve)[] _stops;
 
-    /// <param name="stops">Ascending sequence of (time 0..1, value, Curve in that interval). </param>
+    /// <param name="stops">An ascending sequence of (time in 0..1, value, curve for that interval) stops.</param>
     public TweenSequence(params (float Time, float Value, Curve Curve)[] stops)
     {
         if (stops is null || stops.Length == 0)
         {
-            throw new ArgumentException("キーフレームが必要。", nameof(stops));
+            throw new ArgumentException("At least one keyframe is required.", nameof(stops));
         }
 
         _stops = stops;
@@ -175,7 +176,7 @@ public sealed class TweenSequence
     }
 }
 
-/// <summary>Interpolation of float intervals (Flutter<c>Tween</c>equivalent).<see cref="Lerp"/>0..1 Copy the progress to the value.</summary>
+/// <summary>Interpolation over a float range (equivalent to Flutter's <c>Tween</c>). <see cref="Lerp"/> maps a progress value in 0..1 to the interpolated value.</summary>
 public readonly struct Tween
 {
     public Tween(float begin, float end)
@@ -191,7 +192,7 @@ public readonly struct Tween
     public float Lerp(float t) => Begin + ((End - Begin) * t);
 }
 
-/// <summary>Interpolation of Color intervals.</summary>
+/// <summary>Interpolation over a Color range.</summary>
 public readonly struct ColorTween
 {
     public ColorTween(Color begin, Color end)
@@ -208,7 +209,8 @@ public readonly struct ColorTween
 }
 
 /// <summary>
-/// Axis-parallel affine transformation (scaling + translation, no rotation). <see cref="PaintContext"/>) into a partial tree.
+/// An axis-aligned affine transformation (scaling + translation, no rotation), applied to a subtree during
+/// painting via <see cref="PaintContext"/>.
 /// <c>map(p) = p * Scale + Translate</c>.
 /// </summary>
 internal readonly struct Transform2D
@@ -237,15 +239,15 @@ internal readonly struct Transform2D
     /// <summary>Translation-only transformation.</summary>
     public static Transform2D Translation(Vec2 offset) => new(Vec2.One, offset);
 
-    /// <summary>A transformation that scales around pivot and then translate.</summary>
+    /// <summary>A transformation that scales around a pivot point and then translates.</summary>
     public static Transform2D ScaleAbout(Vec2 scale, Vec2 pivot, Vec2 translate) =>
         new(scale, new Vec2(pivot.X * (1f - scale.X), pivot.Y * (1f - scale.Y)) + translate);
 
-    /// <summary>outer transformation<paramref name="outer"/>inside after<paramref name="inner"/>Synthesis applying (<c>outer.Apply(inner.Apply(p))</c>）。</summary>
+    /// <summary>Composes an <paramref name="outer"/> transformation with an <paramref name="inner"/> one, applying the inner transformation first and then the outer (equivalent to <c>outer.Apply(inner.Apply(p))</c>).</summary>
     public static Transform2D Compose(in Transform2D outer, in Transform2D inner) =>
         new(inner.Scale * outer.Scale, (inner.Translate * outer.Scale) + outer.Translate);
 
-    /// <summary>Inverse transformation (<c>q = p·Scale + Translate</c>The opposite of =<c>p = (q − Translate)/Scale</c>). </summary>
+    /// <summary>The inverse transformation: given <c>q = p·Scale + Translate</c>, returns the transform such that <c>p = (q − Translate) / Scale</c>.</summary>
     public Transform2D Inverse()
     {
         float ix = Scale.X == 0f ? 0f : 1f / Scale.X;
@@ -255,10 +257,12 @@ internal readonly struct Transform2D
 }
 
 /// <summary>
-/// Animation driver that advances 0→1 in time (Flutter<c>AnimationController</c>equivalent).<see cref="ITicker"/>as
-/// <see cref="HamonRoot.Update(Size, float)"/>Move forward with dt.<see cref="Value"/>is linear 0..1,<see cref="Curved"/>teeth
-/// <see cref="Curve"/>After application.<see cref="Opacity"/>/<see cref="Transform"/>from<c>() =&gt; ctrl.Curved</c>If you read it in
-/// <b>Animation when drawing without reconstruction</b>(Reflects the Draw of each frame). <see cref="OnChanged"/>to encourage rebuilding.
+/// An animation driver that advances a value from 0 to 1 over time (equivalent to Flutter's <c>AnimationController</c>).
+/// As an <see cref="ITicker"/>, it is advanced by dt in <see cref="HamonRoot.Update(Size, float)"/>. <see cref="Value"/>
+/// is the linear progress in 0..1, while <see cref="Curved"/> is that value after applying <see cref="Curve"/>.
+/// Widgets such as <see cref="Opacity"/>/<see cref="Transform"/> can read it via a getter like <c>() =&gt; ctrl.Curved</c>
+/// to get <b>animation at draw time without rebuilding</b> (reflected on every frame). Use <see cref="OnChanged"/>
+/// to trigger a rebuild instead.
 /// </summary>
 public sealed class AnimationController : ITicker
 {
@@ -273,7 +277,7 @@ public sealed class AnimationController : ITicker
         Curve = curve ?? Curves.Linear;
     }
 
-    /// <summary>Number of seconds (>0) to multiply from 0 to 1. </summary>
+    /// <summary>Number of seconds (>0) to go from 0 to 1.</summary>
     public float Duration { get; set; }
 
     public Curve Curve { get; set; }
@@ -281,7 +285,7 @@ public sealed class AnimationController : ITicker
     /// <summary>Linear progress 0..1.</summary>
     public float Value => _value;
 
-    /// <summary><see cref="Curve"/>Progress after application 0..1.</summary>
+    /// <summary>Progress in 0..1 after applying <see cref="Curve"/>.</summary>
     public float Curved => Curve(_value);
 
     public bool IsAnimating => _direction != 0;
@@ -351,10 +355,12 @@ public sealed class AnimationController : ITicker
 }
 
 /// <summary>
-/// Make the value follow the target using spring physics (Flutter<c>SpringSimulation</c>A fairly simple version).<see cref="AnimationController"/>but
-/// In contrast to advancing from 0 to 1 in a fixed time, this<b>Converges to target with spring + damping</b>(excessive = overshoot possible).
-/// <see cref="Value"/>Animation without reconstruction if read with getter when drawing.<see cref="ITicker"/>as<see cref="HamonRoot.Update(Size, float)"/>Proceed with
-/// Integration is performed in fixed substeps to ensure stability even when dt is large.
+/// Makes a value follow a target using spring physics (a fairly simple version of Flutter's <c>SpringSimulation</c>).
+/// Unlike <see cref="AnimationController"/>, which advances from 0 to 1 over a fixed duration, this
+/// <b>converges toward the target via spring + damping</b> (it may overshoot if underdamped). If <see cref="Value"/>
+/// is read via a getter at draw time, the animation updates without needing a rebuild. As an <see cref="ITicker"/>,
+/// it is advanced in <see cref="HamonRoot.Update(Size, float)"/>. Integration is performed in fixed substeps to
+/// keep it stable even when dt is large.
 /// </summary>
 public sealed class SpringController : ITicker
 {
@@ -375,16 +381,16 @@ public sealed class SpringController : ITicker
         _target = initial;
     }
 
-    /// <summary>The stiffness of the spring (the larger the spring, the faster it returns).</summary>
+    /// <summary>The stiffness of the spring (the larger the value, the faster it returns to the target).</summary>
     public float Stiffness { get; set; }
 
-    /// <summary>Attenuation (the larger the value, the faster the shaking will subside. Critical attenuation ≒ 2*sqrt(Stiffness)).</summary>
+    /// <summary>Damping (the larger the value, the faster the oscillation subsides; critical damping ≈ 2*sqrt(Stiffness)).</summary>
     public float Damping { get; set; }
 
     /// <summary>Current value.</summary>
     public float Value => _value;
 
-    /// <summary>Current speed.</summary>
+    /// <summary>Current velocity.</summary>
     public float Velocity => _velocity;
 
     /// <summary>Target value (when set, it will start moving towards that target).</summary>
@@ -396,10 +402,10 @@ public sealed class SpringController : ITicker
 
     public bool IsAnimating => _ticking;
 
-    /// <summary>Called every time the value changes (prompts rebuilding in animations that affect the layout, etc. Not necessary if it is a getter when drawing).</summary>
+    /// <summary>Called every time the value changes (use it to prompt a rebuild for animations that affect layout; unnecessary if you read the value via a getter at draw time).</summary>
     public Action? OnChanged { get; set; }
 
-    /// <summary>Set goals and move towards them.</summary>
+    /// <summary>Sets the target and starts moving towards it.</summary>
     public void SetTarget(float target)
     {
         _target = target;
@@ -410,7 +416,7 @@ public sealed class SpringController : ITicker
         }
     }
 
-    /// <summary>Jump to the value immediately (speed to 0).</summary>
+    /// <summary>Jumps to the value immediately (resets velocity to 0).</summary>
     public void JumpTo(float value)
     {
         _value = value;

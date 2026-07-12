@@ -3,64 +3,70 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Scrollbar knob/track<b>Drawing delegate to replace appearance</b>(For games = 9-slice/sprite/arbitrary drawing).
-/// <paramref name="rect"/>is the target rectangle (the thumb has its position/size resolved),<paramref name="opacity"/>will fade opacity,
-/// <paramref name="active"/>Is it hovering/dragging? <see cref="PaintContext.DrawNineSlice"/>You can draw it in one line with .
+/// A drawing delegate that replaces the appearance of the scrollbar knob/track (for games: 9-slice, sprite, or
+/// custom drawing). <paramref name="rect"/> is the target rectangle (the thumb's position/size are already
+/// resolved), <paramref name="opacity"/> is the fade opacity, and <paramref name="active"/> indicates whether it is
+/// being hovered/dragged. You can draw it in one line with <see cref="PaintContext.DrawNineSlice"/>.
 /// </summary>
 public delegate void ScrollbarPartRenderer(in PaintContext context, Rect rect, float opacity, bool active);
 
 /// <summary>
-/// Scrollbar (Flutter<c>Scrollbar</c>equivalent). <see cref="Child"/>（<see cref="ScrollView"/>/
-/// <see cref="ListView"/>/<see cref="GridView"/>) and stack the knobs on the last side (vertical = right/horizontal = bottom).
-/// You can scroll (<see cref="Interactive"/>), automatically fades if there is no operation (<see cref="ThumbVisibility"/>(always displayed).
+/// A scrollbar (equivalent to Flutter's <c>Scrollbar</c>). Wraps <see cref="Child"/> (a <see cref="ScrollView"/> /
+/// <see cref="ListView"/> / <see cref="GridView"/>) and overlays the knob on the trailing edge (vertical = right,
+/// horizontal = bottom). The knob can be dragged to scroll (<see cref="Interactive"/>), and it automatically fades
+/// out when idle unless <see cref="ThumbVisibility"/> keeps it always visible.
 ///
-/// <para>The API will be submitted to Flutter (<c>thumbVisibility</c>/<c>trackVisibility</c>/<c>interactive</c>/<c>thickness</c>/<c>radius</c>）。
-/// However, Flutter<c>PrimaryScrollController</c>/Because there is no ScrollNotification mechanism<see cref="Controller"/>of<b>Required</b>year,
-/// Same as wrapping scrollable<see cref="ScrollController"/>(this is also a common writing method in Flutter).</para>
+/// <para>The API mirrors Flutter's (<c>thumbVisibility</c> / <c>trackVisibility</c> / <c>interactive</c> /
+/// <c>thickness</c> / <c>radius</c>). However, since there is no equivalent to Flutter's
+/// <c>PrimaryScrollController</c> / ScrollNotification mechanism, <see cref="Controller"/> is <b>required</b>: it
+/// must be the same <see cref="ScrollController"/> that wraps the scrollable being tracked (this is also a common
+/// pattern in Flutter).</para>
 ///
-/// Reading and writing<see cref="Controller"/>The thumb drawing/fade is handled at the time of drawing/ticker (zero allocation for steady frames).
+/// The thumb's drawing and fade state read and write <see cref="Controller"/> at paint/ticker time (zero allocation
+/// on steady frames).
 /// </summary>
 public sealed class Scrollbar : Widget, IRenderConfig
 {
     public Widget? Child { get; init; }
 
-    /// <summary>wrap scrollable and share<see cref="ScrollController"/>(required). </summary>
+    /// <summary>The <see cref="ScrollController"/> shared with the wrapped scrollable (required).</summary>
     public required ScrollController Controller { get; init; }
 
-    /// <summary>Bar orientation (default<see cref="Axis.Vertical"/>= far right). <c>Axis</c>Match.</summary>
+    /// <summary>Bar orientation (default <see cref="Axis.Vertical"/> = right edge). Corresponds to Flutter's <c>axis</c> parameter.</summary>
     public Axis Axis { get; init; } = Axis.Vertical;
 
-    /// <summary>Whether to always display the knob (default false = auto fade after operation). <c>thumbVisibility</c>。</summary>
+    /// <summary>Whether to always display the knob (default false = auto-fade after interaction). Corresponds to Flutter's <c>thumbVisibility</c>.</summary>
     public bool ThumbVisibility { get; init; }
 
-    /// <summary>Whether to display tracks (background grooves) (default false). <c>trackVisibility</c>。</summary>
+    /// <summary>Whether to display the track (background groove) (default false). Corresponds to Flutter's <c>trackVisibility</c>.</summary>
     public bool TrackVisibility { get; init; }
 
-    /// <summary>Whether the knob can be operated by dragging/track tapping (default true). <c>interactive</c>。</summary>
+    /// <summary>Whether the knob can be operated by dragging or tapping the track (default true). Corresponds to Flutter's <c>interactive</c>.</summary>
     public bool Interactive { get; init; } = true;
 
-    /// <summary>Bar thickness (px, default 8). <c>thickness</c>。</summary>
+    /// <summary>Bar thickness in px (default 8). Corresponds to Flutter's <c>thickness</c>.</summary>
     public float Thickness { get; init; } = 8f;
 
-    /// <summary>Corner radius of the knob (half the thickness if not specified = round pill). <c>radius</c>。</summary>
+    /// <summary>Corner radius of the knob (defaults to half the thickness = a rounded pill shape). Corresponds to Flutter's <c>radius</c>.</summary>
     public float? Radius { get; init; }
 
-    /// <summary>Thumb color (unspecified and theme<see cref="HamonTheme.OnSurfaceVariant"/>）。</summary>
+    /// <summary>Thumb color (defaults to theme <see cref="HamonTheme.OnSurfaceVariant"/> if unspecified).</summary>
     public Color? ThumbColor { get; init; }
 
-    /// <summary>Track color (unspecified and theme<see cref="HamonTheme.SurfaceVariant"/>）。</summary>
+    /// <summary>Track color (defaults to theme <see cref="HamonTheme.SurfaceVariant"/> if unspecified).</summary>
     public Color? TrackColor { get; init; }
 
     /// <summary>
-    /// Fix the length of the knob (main axis px).<b>null = proportional to scroll amount</b>(default). <b>Fixed size regardless of content</b>
-    /// It becomes a static handle for (game scroll knob, etc.).
+    /// Fixes the length of the knob along the main axis, in px. <b>Null (the default) makes it proportional to the
+    /// scrollable content.</b> Setting a value gives it a <b>fixed size regardless of content</b>, useful for a
+    /// static handle (e.g. a game-style scroll knob).
     /// </summary>
     public float? ThumbExtent { get; init; }
 
-    /// <summary>Replace the appearance of the knob (9-slice/sprite/arbitrary drawing). <see cref="ThumbColor"/>/<see cref="Radius"/>More priority.</summary>
+    /// <summary>Replaces the appearance of the knob (9-slice/sprite/custom drawing). Takes priority over <see cref="ThumbColor"/> / <see cref="Radius"/>.</summary>
     public ScrollbarPartRenderer? ThumbRenderer { get; init; }
 
-    /// <summary>Replace the appearance of the track (9-slice/image/arbitrary drawing). <see cref="TrackVisibility"/>/<see cref="TrackColor"/>Prioritize (always draw).</summary>
+    /// <summary>Replaces the appearance of the track (9-slice/image/custom drawing). Takes priority over <see cref="TrackVisibility"/> / <see cref="TrackColor"/> (always drawn when set).</summary>
     public ScrollbarPartRenderer? TrackRenderer { get; init; }
 
     Style IRenderConfig.Style => new() { Kind = LayoutKind.Stack, StackExpandChildren = true };
@@ -85,7 +91,7 @@ public sealed class Scrollbar : Widget, IRenderConfig
     public override Element CreateElement() => new RenderElement(this);
 }
 
-/// <summary>The entity of the trailing edge strip (<see cref="Scrollbar"/>internal). </summary>
+/// <summary>The trailing-edge strip element (internal to <see cref="Scrollbar"/>).</summary>
 internal sealed class ScrollbarBar : Widget
 {
     public ScrollbarBar(Scrollbar config) => Config = config;

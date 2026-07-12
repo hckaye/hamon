@@ -3,8 +3,9 @@ using Hamon.Layout;
 namespace Hamon.Widgets;
 
 /// <summary>
-/// Drag and drop progress (active<see cref="Draggable{T}"/>data/location and registered<see cref="DragTarget{T}"/>）。
-/// The data is<see cref="object"/>(The public generic is closed with box/cast at the boundary).
+/// Tracks drag-and-drop progress: the active <see cref="Draggable{T}"/>'s data and position, and the
+/// registered <see cref="DragTarget{T}"/> instances. Data is held as <see cref="object"/> (the public
+/// generic type is erased via boxing/casting at the boundary).
 /// </summary>
 internal sealed class DragController
 {
@@ -21,16 +22,16 @@ internal sealed class DragController
 
     public bool Active => Data is not null;
 
-    /// <summary>Appearance to follow (<see cref="DragLayer"/>).</summary>
+    /// <summary>Appearance that follows the pointer (drawn by <see cref="DragLayer"/>).</summary>
     public Widget? Feedback { get; private set; }
 
     /// <summary>The receivable target currently under the pointer (for highlighting).</summary>
     public DragTargetElement? Over { get; private set; }
 
-    /// <summary><see cref="DragLayer"/>Reconstruction trigger at registration (local reconstruction of only that layer when drag starts/ends = avoids rebuilding the entire tree).</summary>
+    /// <summary>Rebuild trigger registered by <see cref="DragLayer"/> (rebuilds only that layer when a drag starts/ends, avoiding a rebuild of the entire tree).</summary>
     internal Action? FeedbackChanged { get; set; }
 
-    /// <summary><see cref="DragLayer"/>is in the tree (if so, the feedback is drawn by the layer = avoiding a full rebuild of the overlay).</summary>
+    /// <summary>Whether a <see cref="DragLayer"/> is present in the tree (if so, the feedback is drawn by that layer, avoiding a full rebuild of the overlay).</summary>
     public bool HasLayer => FeedbackChanged is not null;
 
     public void Register(DragTargetElement target) => _targets.Add(target);
@@ -65,7 +66,7 @@ internal sealed class DragController
         UpdateOver();
     }
 
-    /// <summary>Drop confirmed: If the target directly below receives it.<c>OnAccept</c>call. </summary>
+    /// <summary>Confirms the drop: if the target directly underneath can accept it, calls its <c>OnAccept</c>.</summary>
     public bool Drop()
     {
         bool accepted = false;
@@ -134,10 +135,10 @@ internal sealed class DragController
     }
 }
 
-/// <summary>public generic<see cref="Draggable{T}"/>An internal view for handling type erasure (<see cref="DraggableElement"/>read).</summary>
+/// <summary>An internal, type-erased view of the public generic <see cref="Draggable{T}"/>, read by <see cref="DraggableElement"/>.</summary>
 internal interface IDraggableConfig
 {
-    /// <summary>Transportation data (<see cref="Draggable{T}.Data"/>box).</summary>
+    /// <summary>The transported data (boxed from <see cref="Draggable{T}.Data"/>).</summary>
     object Data { get; }
 
     Widget? Child { get; }
@@ -156,34 +157,36 @@ internal interface IDraggableConfig
 }
 
 /// <summary>
-/// Draggable elements (Flutter<c>Draggable&lt;T&gt;</c>equivalent).<see cref="Child"/>looks normal, follows the pointer while dragging
-/// <see cref="Feedback"/>(Unspecified<see cref="Child"/>) to the front, and then move the<see cref="DragTarget{T}"/>fart
-/// <see cref="Data"/>pass. <see cref="ChildWhenDragging"/>(unspecified)<see cref="Child"/>).
-/// If you let go less than slop<see cref="OnTap"/>。<b>Child is non-interactive</b>(self takes the pointer).
+/// A draggable element (equivalent to Flutter's <c>Draggable&lt;T&gt;</c>). <see cref="Child"/> is displayed
+/// normally; while dragging, <see cref="Feedback"/> (falls back to <see cref="Child"/> if unspecified) follows
+/// the pointer on top, and dropping onto a <see cref="DragTarget{T}"/> passes it <see cref="Data"/>.
+/// <see cref="ChildWhenDragging"/> (falls back to <see cref="Child"/> if unspecified) is shown in the original
+/// position while dragging. If released before moving past <c>Slop</c>, <see cref="OnTap"/> fires instead.
+/// <b>The child is non-interactive</b> — the draggable itself captures the pointer.
 /// </summary>
-/// <typeparam name="T">Type of data to be carried.<see cref="DragTarget{T}"/>are the same<typeparamref name="T"/>It can only be received when</typeparam>
+/// <typeparam name="T">Type of data being carried. Can only be received by a <see cref="DragTarget{T}"/> with the same <typeparamref name="T"/>.</typeparam>
 public sealed class Draggable<T> : Widget, IRenderConfig, IDraggableConfig
 {
     public Widget? Child { get; init; }
 
     public required T Data { get; init; }
 
-    /// <summary>Appearance that follows the pointer while dragging (unspecified)<see cref="Child"/>）。</summary>
+    /// <summary>Appearance that follows the pointer while dragging (falls back to <see cref="Child"/> if unspecified).</summary>
     public Widget? Feedback { get; init; }
 
-    /// <summary>The appearance of returning to the original position while dragging (if not specified)<see cref="Child"/>As it is. </summary>
+    /// <summary>Appearance shown in the original position while dragging (falls back to <see cref="Child"/> as-is if unspecified).</summary>
     public Widget? ChildWhenDragging { get; init; }
 
-    /// <summary>Released (= tap) less than slop.</summary>
+    /// <summary>Invoked when released before moving past the slop threshold (i.e. a tap).</summary>
     public Action? OnTap { get; init; }
 
-    /// <summary>At the start of the drag (beyond slop). </summary>
+    /// <summary>Invoked when dragging starts (movement exceeds the slop threshold).</summary>
     public Action? OnDragStarted { get; init; }
 
-    /// <summary>When the drag ends. </summary>
+    /// <summary>Invoked when the drag ends, with a flag indicating whether the drop was accepted.</summary>
     public Action<bool>? OnDragEnd { get; init; }
 
-    /// <summary>Amount of movement (px, default<see cref="DraggableElement.DefaultSlop"/>). </summary>
+    /// <summary>Movement threshold in pixels before a drag starts (defaults to <see cref="DraggableElement.DefaultSlop"/>).</summary>
     public float Slop { get; init; } = DraggableElement.DefaultSlop;
 
     object IDraggableConfig.Data => Data!; // T→object（参照型は box なし／値型は従来同様ここで1回 box）
@@ -346,10 +349,10 @@ internal sealed class DraggableElement : RenderElement
     }
 }
 
-/// <summary>public generic<see cref="DragTarget{T}"/>An internal view for handling type erasure (<see cref="DragTargetElement"/>read).</summary>
+/// <summary>An internal, type-erased view of the public generic <see cref="DragTarget{T}"/>, read by <see cref="DragTargetElement"/>.</summary>
 internal interface IDragTargetConfig
 {
-    /// <summary>Can I receive this data? (Type mismatch is always false =<see cref="DragTarget{T}"/>teeth<typeparamref name="T"/>(Ignore everything else).</summary>
+    /// <summary>Whether this data can be received. Always false on a type mismatch, since a <see cref="DragTarget{T}"/> only accepts its own <c>T</c> and ignores anything else.</summary>
     bool CanAcceptData(object data);
 
     void AcceptData(object data);
@@ -358,16 +361,14 @@ internal interface IDragTargetConfig
 
     Color? HighlightColor { get; }
 
-    /// <summary><see cref="DragTarget{T}.Builder"/>Is it specified (if so, the appearance is determined by the user = no automatic highlighting)?</summary>
+    /// <summary>Whether <see cref="DragTarget{T}.Builder"/> is specified (if so, the appearance is fully controlled by the user and automatic highlighting is disabled).</summary>
     bool HasBuilder { get; }
 
-    /// <summary><see cref="DragTarget{T}.Builder"/>Build the appearance of the current hover state with (<paramref name="candidate"/>is transportation data when active).</summary>
+    /// <summary>Builds the appearance for the current hover state via <see cref="DragTarget{T}.Builder"/> (<paramref name="candidate"/> is the transported data when active).</summary>
     Widget BuildContent(bool active, object? candidate);
 }
 
-/// <summary>
-/// <see cref="DragTarget{T}.Builder"/>The hover state to pass to.
-/// </summary>
+/// <summary>The hover state passed to <see cref="DragTarget{T}.Builder"/>.</summary>
 /// <typeparam name="T">Type of data to receive.</typeparam>
 public readonly struct DragTargetState<T>
 {
@@ -377,18 +378,21 @@ public readonly struct DragTargetState<T>
         Candidate = candidate;
     }
 
-    /// <summary>Is there a drag currently available for pickup (drop acceptance expected)?</summary>
+    /// <summary>Whether a drag currently over this target is acceptable (i.e. a drop is expected to be accepted).</summary>
     public bool IsActive { get; }
 
-    /// <summary>The candidate data (<see cref="IsActive"/>Valid only when . <c>default</c>）。</summary>
+    /// <summary>The candidate data (valid only when <see cref="IsActive"/> is true; otherwise <c>default</c>).</summary>
     public T? Candidate { get; }
 }
 
 /// <summary>
-/// Drop destination (Flutter<c>DragTarget&lt;T&gt;</c>equivalent).<typeparamref name="T"/>When the drag carrying the item is on top and can be received, the frame will be
-/// Highlight and drop<see cref="OnAccept"/>Pass the data to.<see cref="CanAccept"/>to determine whether or not it can be received (always accepted if unspecified).
-/// <b>Transportation data<typeparamref name="T"/>The framework automatically ignores drags other than</b>(No manual type guard required).
-/// When you need a fancy hover expression<see cref="Builder"/>Assemble the entire appearance with (escape hatch) (in that case<see cref="Child"/>/Do not use automatic highlighting).
+/// A drop destination (equivalent to Flutter's <c>DragTarget&lt;T&gt;</c>). While a drag carrying data of type
+/// <typeparamref name="T"/> is over it and acceptable, the frame is highlighted, and on drop
+/// <see cref="OnAccept"/> receives the data. <see cref="CanAccept"/> determines whether the data can be
+/// received (always accepted if unspecified).
+/// <b>The framework automatically ignores drags whose data isn't <typeparamref name="T"/></b> (no manual type
+/// guard is needed). For a custom hover appearance, use <see cref="Builder"/> to assemble the entire look
+/// (an escape hatch); in that case <see cref="Child"/> and automatic highlighting are not used.
 /// </summary>
 /// <typeparam name="T">Type of data to receive.</typeparam>
 public sealed class DragTarget<T> : Widget, IRenderConfig, IDragTargetConfig
@@ -396,9 +400,10 @@ public sealed class DragTarget<T> : Widget, IRenderConfig, IDragTargetConfig
     public Widget? Child { get; init; }
 
     /// <summary>
-    /// hover state (<see cref="DragTargetState{T}"/>) The escape hatch (Flutter<c>DragTarget.builder</c>equivalent).
-    /// If specified<see cref="Child"/>and automatic highlighting (<see cref="HighlightColor"/>) are disabled, and the appearance is completely under the user's control.
-    /// This element whenever the state changes<b>only</b>(without full tree reconstruction).
+    /// An escape hatch that builds the appearance from the hover state (<see cref="DragTargetState{T}"/>),
+    /// equivalent to Flutter's <c>DragTarget.builder</c>. When specified, <see cref="Child"/> and automatic
+    /// highlighting (<see cref="HighlightColor"/>) are disabled, and the appearance is entirely under the user's
+    /// control. <b>Only</b> this element is rebuilt whenever the state changes (without rebuilding the full tree).
     /// </summary>
     public Func<DragTargetState<T>, Widget>? Builder { get; init; }
 
@@ -406,10 +411,10 @@ public sealed class DragTarget<T> : Widget, IRenderConfig, IDragTargetConfig
 
     public Func<T, bool>? CanAccept { get; init; }
 
-    /// <summary>When the drag that can be received is off the top (leaving without dropping/aborting). </summary>
+    /// <summary>Invoked when an acceptable drag leaves this target without dropping (or is aborted).</summary>
     public Action<T>? OnLeave { get; init; }
 
-    /// <summary>The highlight frame color when the drag that can be received is on top (the theme is Primary if not specified).<see cref="Builder"/>(invalid when specified).</summary>
+    /// <summary>The highlight border color shown when an acceptable drag is over this target (defaults to the theme's primary color if unspecified). Ignored when <see cref="Builder"/> is specified.</summary>
     public Color? HighlightColor { get; init; }
 
     bool IDragTargetConfig.CanAcceptData(object data) => data is T value && (CanAccept?.Invoke(value) ?? true);
@@ -487,7 +492,7 @@ internal sealed class DragTargetElement : RenderElement
 
     public void NotifyLeave(object data) => W.NotifyLeaveData(data);
 
-    /// <summary>This target's hover state has changed (controller calls enter/leave/drop). </summary>
+    /// <summary>Called when this target's hover state changes (invoked by the controller on enter/leave/drop).</summary>
     internal void OnOverChanged()
     {
         if (W.HasBuilder)
@@ -522,10 +527,11 @@ internal sealed class DragTargetElement : RenderElement
 }
 
 /// <summary>
-/// Feedback while dragging (<see cref="Draggable{T}.Feedback"/>) is drawn on top by following the pointer.
-/// （<c>FxLayer</c>). <b>only</b>To locally reconstruct<see cref="Draggable{T}"/>at the start
-/// You can avoid rebuilding the entire tree (stutter). <b>D&D works even when unplaced</b>
-/// (In that case, draw the feedback as an overlay = full rebuild at the start).
+/// Draws the drag feedback (<see cref="Draggable{T}.Feedback"/>) on top, following the pointer (similar to an
+/// <c>FxLayer</c>). Placing this near the root means <b>only</b> this layer is locally rebuilt when a
+/// <see cref="Draggable{T}"/> starts dragging, avoiding a rebuild of the entire tree (which would stutter).
+/// <b>Drag-and-drop still works even if this isn't placed anywhere</b> — in that case, the feedback is drawn
+/// as an overlay instead, causing a full rebuild at the start.
 /// </summary>
 public sealed class DragLayer : HookWidget
 {
