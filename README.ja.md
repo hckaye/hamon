@@ -18,6 +18,14 @@ C#向けのリアクティブな宣言的UIライブラリです。特に、Mono
 
 ## はじめに
 
+MonoGameバックエンド一式をインストールします（pre-1.0リリースではバージョンを明示してください）。
+
+```shell
+dotnet add package Hamon.MonoGame --version 0.1.0-alpha.1
+```
+
+エンジン非依存で組み込む場合は`Hamon`を、FontStashSharpテキストバックエンドだけが必要な場合は`Hamon.Fonts`を利用できます。pre-1.0の間は、マイナーバージョン間で破壊的変更が入る可能性があります。
+
 ```csharp
 using Hamon.MonoGame;
 

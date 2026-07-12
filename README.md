@@ -39,6 +39,14 @@ samples/Hamon.SampleApp3/     Game-style HUD showcase
 
 ## Getting started
 
+Install the batteries-included MonoGame backend (pre-1.0 releases require an explicit version):
+
+```shell
+dotnet add package Hamon.MonoGame --version 0.1.0-alpha.1
+```
+
+For an engine-independent integration, install `Hamon` instead. `Hamon.Fonts` is also available separately for the FontStashSharp text backend. Pre-1.0 versions may contain breaking API changes between minor releases.
+
 The minimal app requires no wiring:
 
 ```csharp

@@ -5,6 +5,9 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Hamon.MonoGame</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <PackageId>Hamon.MonoGame</PackageId>
+    <Description>MonoGame rendering, input, and application backend for Hamon.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,10 +18,10 @@
 
   <!-- MonoGame 参照の切替（third_party/MonoGame/VENDORING.md）。既定＝HiDPI パッチ済みの vendored。
        NuGet 版へ戻すには `-p:UseVendoredMonoGame=false`（or 環境変数 UseVendoredMonoGame=false）。 -->
-  <ItemGroup Condition="'$(UseVendoredMonoGame)' != 'false'">
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' != 'false' and '$(IsPacking)' != 'true'">
     <ProjectReference Include="..\..\..\third_party\MonoGame\MonoGame.Framework\MonoGame.Framework.DesktopGL.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseVendoredMonoGame)' == 'false'">
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' == 'false' or '$(IsPacking)' == 'true'">
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
   </ItemGroup>
 
