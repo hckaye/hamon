@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hamon だけで作る最小アプリ。Program.cs は実質「new HamonGame(root).Run()」の数行のみ。
+       参照は Hamon.MonoGame 1つ（HamonApp/HamonGame と既定バックエンドが入る）。
+       フォントは同梱せず OS システムフォントを自動解決（無設定起動の実証）。日本語を厳密に出すなら
+       HamonAppOptions.Font / FontPath / 環境変数 HAMON_FONT で TTF/OTF を指定する。 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Hamon.MinimalApp</RootNamespace>
+  </PropertyGroup>
+
+  <!-- MonoGame 参照の切替（third_party/MonoGame/VENDORING.md）。既定＝HiDPI パッチ済みの vendored。 -->
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' != 'false'">
+    <ProjectReference Include="..\..\..\third_party\MonoGame\MonoGame.Framework\MonoGame.Framework.DesktopGL.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' == 'false'">
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hamon.MonoGame\Hamon.MonoGame.csproj" />
+  </ItemGroup>
+
+</Project>

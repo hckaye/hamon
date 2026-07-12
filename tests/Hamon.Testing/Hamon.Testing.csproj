@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hamon のテスト共有基盤（単体=Hamon.Tests／統合=Hamon.E2E.Tests が参照）。
+       GPU/MonoGame 非依存：IPainter/ITextRenderer を純 managed で実装し、ヘッドレスで実ピクセル＋実フォント描画する。
+       FontStashSharp は netstandard2.0・MonoGame 非依存（自前の ITexture2DManager/IFontStashRenderer を managed バッファで実装）。
+       Hamon.Fonts は参照しない（MonoGame を引き込まないため）。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Hamon.Testing</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FontStashSharp" Version="1.3.9" />
+    <!-- 共有ヘルパが Assert を提供するためアサーションのみ参照（ランナーは各テストプロジェクト側）。 -->
+    <PackageReference Include="xunit.assert" Version="2.9.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hamon\Hamon.csproj" />
+  </ItemGroup>
+
+  <!-- ヘッドレス実フォント用 TTF（既存資産を出力へコピーして AppContext.BaseDirectory から読む）。 -->
+  <ItemGroup>
+    <None Include="..\..\assets\fonts\NotoSansJP\NotoSansJP-Regular.ttf" Link="NotoSansJP-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,26 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+
+# MonoGame content pipeline
+Content/bin/
+Content/obj/
+
+# BenchmarkDotNet の実行成果物（レポート/ビルド）
+BenchmarkDotNet.Artifacts/
+
+# Rider / VS / VSCode
+.idea/
+.vs/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# golden 画像リグレッションの失敗成果物（実画像/差分・コミット対象外。正は *.png のみ）
+*.actual.png
+*.diff.png

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hamon 単独デモ／自己検証ハーネス（vlo 非依存）。
+       通常起動はインタラクティブ描画。環境変数 HAMON_DUMP=<出力png> が在る場合は
+       オフスクリーン(RenderTarget)へ1フレーム描画して PNG 保存し終了する（ヘッドレス検証用）。
+       第1引数=TTFパス（未指定時は HAMON_FONT 環境変数）。 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Hamon.Sandbox</RootNamespace>
+  </PropertyGroup>
+
+  <!-- MonoGame 参照の切替（third_party/MonoGame/VENDORING.md）。既定＝HiDPI パッチ済みの vendored。
+       NuGet 版へ戻すには `-p:UseVendoredMonoGame=false`（or 環境変数 UseVendoredMonoGame=false）。 -->
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' != 'false'">
+    <ProjectReference Include="..\..\..\third_party\MonoGame\MonoGame.Framework\MonoGame.Framework.DesktopGL.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' == 'false'">
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 同梱フォント Noto Sans JP（OFL 1.1）を出力へコピー。既定でこれを使う。 -->
+    <None Include="..\..\assets\fonts\NotoSansJP\NotoSansJP-Regular.ttf" Link="NotoSansJP-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\assets\fonts\NotoSansJP\OFL.txt" Link="NotoSansJP-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hamon\Hamon.csproj" />
+    <ProjectReference Include="..\..\src\Hamon.MonoGame\Hamon.MonoGame.csproj" />
+    <ProjectReference Include="..\..\src\Hamon.Fonts\Hamon.Fonts.csproj" />
+  </ItemGroup>
+
+</Project>

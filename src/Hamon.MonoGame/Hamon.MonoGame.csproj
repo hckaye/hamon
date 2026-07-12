@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hamon の MonoGame バックエンド。コア（IPainter/ITexture）を MonoGame の SpriteBatch/Texture2D で実装する。
+       Mono 依存はこのパッケージに閉じ込める（Godot/Unity 等の別バックエンドは別パッケージで対応可能）。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Hamon.MonoGame</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hamon\Hamon.csproj" />
+    <!-- 既定テキストバックエンド（FontStash）。HamonApp/HamonGame のバッテリー同梱ファサードが使う。 -->
+    <ProjectReference Include="..\Hamon.Fonts\Hamon.Fonts.csproj" />
+  </ItemGroup>
+
+  <!-- MonoGame 参照の切替（third_party/MonoGame/VENDORING.md）。既定＝HiDPI パッチ済みの vendored。
+       NuGet 版へ戻すには `-p:UseVendoredMonoGame=false`（or 環境変数 UseVendoredMonoGame=false）。 -->
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' != 'false'">
+    <ProjectReference Include="..\..\..\third_party\MonoGame\MonoGame.Framework\MonoGame.Framework.DesktopGL.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' == 'false'">
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+  </ItemGroup>
+
+</Project>

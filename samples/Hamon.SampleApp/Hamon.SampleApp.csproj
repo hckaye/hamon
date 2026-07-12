@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hamon サンプルアプリ・カタログ。定番サンプル（電卓/ストップウォッチ/天気/ToDo/ギャラリー/設定）を
+       カタログページから push ナビゲーションで開き、Back/Esc/ゲームパッドB で pop して戻る Hamon の実利用例。 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Hamon.SampleApp</RootNamespace>
+  </PropertyGroup>
+
+  <!-- MonoGame 参照の切替（third_party/MonoGame/VENDORING.md）。既定＝HiDPI パッチ済みの vendored。
+       NuGet 版へ戻すには `-p:UseVendoredMonoGame=false`（or 環境変数 UseVendoredMonoGame=false）。 -->
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' != 'false'">
+    <ProjectReference Include="..\..\..\third_party\MonoGame\MonoGame.Framework\MonoGame.Framework.DesktopGL.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseVendoredMonoGame)' == 'false'">
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 同梱フォント Noto Sans JP（OFL 1.1）を出力へコピー。サンプルは既定でこれを使う。 -->
+    <None Include="..\..\assets\fonts\NotoSansJP\NotoSansJP-Regular.ttf" Link="NotoSansJP-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\assets\fonts\NotoSansJP\OFL.txt" Link="NotoSansJP-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Hamon.MonoGame だけで完結（コア Hamon と既定テキスト層 Hamon.Fonts は推移的に入る）。 -->
+    <ProjectReference Include="..\..\src\Hamon.MonoGame\Hamon.MonoGame.csproj" />
+  </ItemGroup>
+
+</Project>

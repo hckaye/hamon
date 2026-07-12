@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hamon コア：宣言的reactive UIライブラリ。エンジン非依存（純粋C#・MonoGame 参照なし）。
+       描画/テキスト/テクスチャは IPainter / ITextRenderer / ITexture の抽象越し。
+       具体バックエンドは Hamon.MonoGame 等が提供する。vlo には依存しない一方通行。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Hamon</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Hamon.Tests" />
+    <!-- 将来の保持ビュー・バックエンド（Unity uGUI 等）が reconcile 内部（Element.RebuildInPlace 等）へアクセスするため。 -->
+    <InternalsVisibleTo Include="Hamon.UGUI" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hamon の統合(E2E)テスト：複数ウィジェットを組んだ全画面合成を、画像リグレッション＋パフォーマンスで検証する。
+       重め（多ウィジェット・多フレーム・操作スクリプト）なので単体（Hamon.Tests）と別プロジェクトに分離する。
+       基盤は Hamon.Testing を共有。MonoGame/GPU 非依存（ヘッドレス実ピクセル＋実フォント）。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Hamon.E2E.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hamon\Hamon.csproj" />
+    <ProjectReference Include="..\Hamon.Testing\Hamon.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

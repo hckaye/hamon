@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hamon の決定論ユニットテスト（レイアウト計算・reconcile差分・ヒットテスト・フォーカス移動）。
+       MonoGame 非依存の純ロジックを対象にする。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Hamon.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hamon\Hamon.csproj" />
+    <ProjectReference Include="..\..\src\Hamon.Fonts\Hamon.Fonts.csproj" />
+    <ProjectReference Include="..\Hamon.Testing\Hamon.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

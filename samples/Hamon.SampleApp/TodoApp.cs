@@ -1,0 +1,195 @@
+using Hamon.Layout;
+using Hamon.Widgets;
+using System.Linq;
+
+namespace Hamon.SampleApp;
+
+/// <summary>
+/// Standard mobile UI sample: ToDo app (**hook + atom version**). <see cref="Atom{T}"/>(items/filter) and
+/// <c>hooks.UseAtom</c>Read and write.
+/// This subtree is automatically rebuilt. <c>UseMemo</c>/<c>UseFocusNode</c>Permanent.
+/// </summary>
+public sealed class TodoApp : HookWidget
+{
+    private static readonly Atom<TodoItem[]> ItemsAtom = new(new[]
+    {
+        new TodoItem("牛乳を買う") { Done = true },
+        new TodoItem("装備を強化する"),
+        new TodoItem("ボスに挑戦する"),
+    });
+
+    private static readonly Atom<int> FilterAtom = new(0); // 0=すべて 1=未完了 2=完了
+
+    public override Widget Build(BuildContext context, Hooks hooks)
+    {
+        HamonTheme theme = context.Theme;
+        (TodoItem[] items, Action<TodoItem[]> setItems) = hooks.UseAtom(ItemsAtom);
+        (int filter, Action<int> setFilter) = hooks.UseAtom(FilterAtom);
+        var input = hooks.UseMemo(() => new TextEditingController());
+        FocusNode inputNode = hooks.UseFocusNode();
+        FocusNode addNode = hooks.UseFocusNode();
+        FocusNode[] filterNodes = { hooks.UseFocusNode(), hooks.UseFocusNode(), hooks.UseFocusNode() };
+
+        void Add()
+        {
+            string text = input.Text.Trim();
+            if (text.Length > 0)
+            {
+                setItems(items.Append(new TodoItem(text)).ToArray());
+                input.SetText(string.Empty);
+            }
+        }
+
+        TodoItem[] visible = items.Where(t => filter switch { 1 => !t.Done, 2 => t.Done, _ => true }).ToArray();
+        int active = items.Count(t => !t.Done);
+
+        Widget FilterButton(string label, int value) => new Button
+        {
+            Node = filterNodes[value],
+            Background = filter == value ? theme.Primary : theme.SurfaceVariant,
+            Padding = EdgeInsets.Symmetric(14f, 8f),
+            OnPressed = () => setFilter(value),
+            Child = new Text(label) { FontSize = 14f, Color = filter == value ? theme.OnPrimary : theme.OnSurface },
+        };
+
+        Widget Row_(TodoItem item) => new Container
+        {
+            Key = item, // 行の安定 Key＝削除/並べ替えで index 再利用による状態混線を防ぐ
+            Padding = EdgeInsets.Symmetric(12f, 10f),
+            Child = new Row
+            {
+                MainAxisAlignment = MainAxisAlignment.SpaceBetween,
+                CrossAxisAlignment = CrossAxisAlignment.Center,
+                Children = new Widget[]
+                {
+                    new Row
+                    {
+                        Spacing = 12f,
+                        CrossAxisAlignment = CrossAxisAlignment.Center,
+                        Children = new Widget[]
+                        {
+                            new Checkbox
+                            {
+                                Node = new FocusNode(),
+                                Value = item.Done,
+                                OnChanged = _ => setItems(items.Select(t => ReferenceEquals(t, item) ? item.Toggled() : t).ToArray()),
+                            },
+                            new Text(item.Text)
+                            {
+                                FontSize = 18f,
+                                Color = item.Done ? theme.OnSurfaceVariant : theme.OnSurface,
+                            },
+                        },
+                    },
+                    new Button
+                    {
+                        Node = new FocusNode(),
+                        Background = theme.SurfaceVariant,
+                        Padding = EdgeInsets.Symmetric(10f, 6f),
+                        OnPressed = () => setItems(items.Where(t => !ReferenceEquals(t, item)).ToArray()),
+                        Child = new Text("✕") { FontSize = 16f, Color = theme.Danger },
+                    },
+                },
+            },
+        };
+
+        // Stack(expand)＋Positioned(inset) で全画面に背景＋内側余白を敷く。
+        return new Stack
+        {
+            Fit = StackFit.Expand,
+            Background = theme.Background,
+            Children = new Widget[]
+            {
+                new Positioned
+                {
+                    Left = Dimension.Px(24f),
+                    Top = Dimension.Px(24f),
+                    Right = Dimension.Px(24f),
+                    Bottom = Dimension.Px(24f),
+                    Child = new Column
+                    {
+                        CrossAxisAlignment = CrossAxisAlignment.Stretch,
+                        Spacing = 16f,
+                        Children = new Widget[]
+                        {
+                            new Text("ToDo") { FontSize = 28f, Color = theme.OnSurface },
+                            new Container
+                            {
+                                Color = theme.Surface,
+                                Radius = theme.Radius,
+                                Child = new TextField
+                                {
+                                    Controller = input,
+                                    Node = inputNode,
+                                    Placeholder = "新しいタスク…",
+                                    FontSize = 18f,
+                                    OnSubmitted = _ => Add(),
+                                },
+                            },
+                            new Button
+                            {
+                                Node = addNode,
+                                Background = theme.Primary,
+                                Padding = EdgeInsets.Symmetric(16f, 12f),
+                                OnPressed = Add,
+                                Child = new Text("追加") { FontSize = 16f, Color = theme.OnPrimary },
+                            },
+                            new Row
+                            {
+                                Spacing = 8f,
+                                Children = new Widget[] { FilterButton("すべて", 0), FilterButton("未完了", 1), FilterButton("完了", 2) },
+                            },
+                            new Expanded
+                            {
+                                // 残り全高を占めるリスト。背景パネルは Stack(expand) で敷く。
+                                Child = new Stack
+                                {
+                                    Fit = StackFit.Expand,
+                                    Background = theme.Surface,
+                                    Radius = theme.Radius,
+                                    Children = new Widget[]
+                                    {
+                                        new ListView
+                                        {
+                                            ItemCount = visible.Length,
+                                            EstimatedExtent = 52f,
+                                            Builder = index => Row_(visible[index]),
+                                        },
+                                    },
+                                },
+                            },
+                            new Row
+                            {
+                                MainAxisAlignment = MainAxisAlignment.SpaceBetween,
+                                CrossAxisAlignment = CrossAxisAlignment.Center,
+                                Children = new Widget[]
+                                {
+                                    new Text($"{active} 件 未完了") { FontSize = 14f, Color = theme.OnSurfaceVariant },
+                                    new Button
+                                    {
+                                        Node = new FocusNode(),
+                                        Background = theme.SurfaceVariant,
+                                        Padding = EdgeInsets.Symmetric(12f, 8f),
+                                        OnPressed = () => setItems(items.Where(t => !t.Done).ToArray()),
+                                        Child = new Text("完了を消す") { FontSize = 14f, Color = theme.OnSurface },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        };
+    }
+
+    private sealed class TodoItem
+    {
+        public TodoItem(string text) => Text = text;
+
+        public string Text { get; }
+
+        public bool Done { get; init; }
+
+        public TodoItem Toggled() => new(Text) { Done = !Done };
+    }
+}

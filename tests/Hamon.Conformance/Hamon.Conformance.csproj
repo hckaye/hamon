@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 適合ゲート（ADR-0007 / ADR-0013）：Hamon の同一ソースを KNI に対してビルドする。
+       素MonoGame 側のビルドは Hamon/Hamon.Fonts が担う。本プロジェクトが通れば
+       「Hamon が MonoGame と KNI の両方でコンパイル可能（=KNI固有/DesktopGL固有API混入なし）」が保証される。
+       ビルドのみで実行はしない。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Hamon.Conformance</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- 適合ゲートでは KNI 由来のスタイル差を build 失敗にしない（素MonoGame 側の build/format が正準）。 -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="nkast.Xna.Framework" Version="4.2.9001" />
+    <PackageReference Include="nkast.Xna.Framework.Graphics" Version="4.2.9001" />
+    <PackageReference Include="nkast.Xna.Framework.Game" Version="4.2.9001" />
+    <!-- FontStashSharp は MonoGame 非依存（netstandard2.0）なので KNI と併用できる。 -->
+    <PackageReference Include="FontStashSharp" Version="1.3.9" />
+  </ItemGroup>
+
+  <!-- Hamon コア＋テキスト層の実ソースを取り込み、KNI に対して再コンパイルする -->
+  <ItemGroup>
+    <Compile Include="..\..\src\Hamon\**\*.cs"
+             Exclude="..\..\src\Hamon\obj\**\*.cs;..\..\src\Hamon\bin\**\*.cs" />
+    <Compile Include="..\..\src\Hamon.Fonts\**\*.cs"
+             Exclude="..\..\src\Hamon.Fonts\obj\**\*.cs;..\..\src\Hamon.Fonts\bin\**\*.cs" />
+    <Compile Include="..\..\src\Hamon.MonoGame\**\*.cs"
+             Exclude="..\..\src\Hamon.MonoGame\obj\**\*.cs;..\..\src\Hamon.MonoGame\bin\**\*.cs" />
+  </ItemGroup>
+
+</Project>
