@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   pack:
@@ -42,6 +43,12 @@ jobs:
         with:
           name: nuget-packages
           path: artifacts/*.*nupkg
+      - name: NuGet login
+        if: github.ref_type == 'tag'
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: hckaye
       - name: Publish to NuGet.org
         if: github.ref_type == 'tag'
-        run: dotnet nuget push 'artifacts/*.nupkg' --api-key '${{ secrets.NUGET_API_KEY }}' --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push 'artifacts/*.nupkg' --api-key '${{ steps.nuget-login.outputs.NUGET_API_KEY }}' --source https://api.nuget.org/v3/index.json --skip-duplicate
