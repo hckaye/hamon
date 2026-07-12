@@ -1,5 +1,7 @@
 # Hamon
 
+[![NuGet](https://img.shields.io/nuget/vpre/Hamon.svg)](https://www.nuget.org/packages/Hamon)
+
 [日本語版](README.ja.md)
 
 A reactive, declarative UI library for C#, especially for MonoGame. **UI = f(state)**.

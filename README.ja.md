@@ -1,5 +1,7 @@
 # Hamon
 
+[![NuGet](https://img.shields.io/nuget/vpre/Hamon.svg)](https://www.nuget.org/packages/Hamon)
+
 C#向けのリアクティブな宣言的UIライブラリです。特に、MonoGame向けライブラリをファーストターゲットとして開発しています。**UI = f(state)**。
 
 状態変化に追従しながら、ゲームのホットパスで毎フレームのヒープアロケーションを避けることを目指しています。コアは描画エンジンから独立しており、MonoGameバックエンドを同梱しています。
