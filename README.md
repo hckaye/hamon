@@ -2,7 +2,7 @@
 
 [日本語版](README.ja.md)
 
-A reactive, declarative UI library for C#. **UI = f(state)**.
+A reactive, declarative UI library for C#, especially for MonoGame. **UI = f(state)**.
 
 Hamon lets you describe UI declaratively while following state changes and avoiding per-frame heap allocations in game hot paths. The core is independent of any rendering engine, and rendering backends can be replaced (a MonoGame backend is included).
 
