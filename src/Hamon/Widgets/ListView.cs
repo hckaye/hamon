@@ -66,6 +66,14 @@ internal sealed class ListViewElement : Element, IVirtualLayout, IScrollable
     private readonly List<Element> _visible = new();
     private readonly DragScroller _drag;
 
+    // Reusable scratch buffers for RealizeRange's keyed reconciliation. These are cleared (not
+    // reallocated) on each call so a steady-state relayout allocates no new collections; they hold no
+    // state between calls. RealizeRange is only called once per Measure pass on a given instance and is
+    // never reentrant on the same instance, so sharing these per-instance buffers is safe.
+    private readonly Dictionary<object, Element> _oldByKeyScratch = new();
+    private readonly HashSet<Element> _usedScratch = new();
+    private readonly Dictionary<int, Element> _nextScratch = new();
+
     private int _lastEndCount = -1;
 
     // 可変高の累積長を O(log n) で扱う Fenwick（BIT）。各要素は (実測 extent − 推定) の差分を保持し、
@@ -250,17 +258,21 @@ internal sealed class ListViewElement : Element, IVirtualLayout, IScrollable
     /// </summary>
     private void RealizeRange(ListView widget, int first, int last, bool vertical, float vpCross, float scroll)
     {
-        Dictionary<object, Element>? oldByKey = null;
+        Dictionary<object, Element> oldByKey = _oldByKeyScratch;
+        HashSet<Element> used = _usedScratch;
+        Dictionary<int, Element> next = _nextScratch;
+        oldByKey.Clear();
+        used.Clear();
+        next.Clear();
+
         foreach (KeyValuePair<int, Element> kv in _active)
         {
             if (kv.Value.Widget.Key is object key)
             {
-                (oldByKey ??= new Dictionary<object, Element>()).TryAdd(key, kv.Value);
+                oldByKey.TryAdd(key, kv.Value);
             }
         }
 
-        var used = new HashSet<Element>();
-        var next = new Dictionary<int, Element>();
         BoxConstraints itemConstraints = MakeItemConstraints(vertical, vpCross, widget.ItemExtent);
 
         for (int i = first; i <= last; i++)
@@ -295,11 +307,10 @@ internal sealed class ListViewElement : Element, IVirtualLayout, IScrollable
         }
     }
 
-    private Element ReuseOrCreate(Widget built, int index, Dictionary<object, Element>? oldByKey, HashSet<Element> used)
+    private Element ReuseOrCreate(Widget built, int index, Dictionary<object, Element> oldByKey, HashSet<Element> used)
     {
         // Key 付き：同じ Key の旧要素を index 跨ぎで再利用（並べ替え/削除で identity 維持）。
         if (built.Key is object key
-            && oldByKey is not null
             && oldByKey.TryGetValue(key, out Element? byKey)
             && Widget.CanUpdate(byKey.Widget, built)
             && used.Add(byKey))

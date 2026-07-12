@@ -456,6 +456,62 @@ internal sealed class TextFieldElement : Element
     private AnimationController? _blink;
     private float _lastCaretX = float.NaN; // キャレットが動いたら点滅を可視へリセットするための前回値
 
+    // --- PaintSingleLine キャッシュ：確定文字＋変換中の合成テキストと計測幅（選択範囲には非依存）。 ---
+    // キャレット点滅ティッカーは入力が何も変わらなくても毎フレーム Paint を呼ぶため、
+    // 直近の入力と同一なら Substring 合成/Measure（FontStash 呼び出し）を再利用する（TextElement.MeasureText と同じ方式）。
+    private bool _slHasCache;
+    private string? _slCacheText;
+    private int _slCacheCaret;
+    private string? _slCacheComposition;
+    private int _slCacheCompositionCaret;
+    private float _slCacheFontSize;
+    private string _slCacheComposed = string.Empty;
+    private float _slCacheBeforeW;
+    private float _slCacheCompW;
+    private float _slCacheCompCaretW;
+    private float _slCacheCaretX;
+    private float _slCacheLineH;
+
+    // --- PaintSingleLine キャッシュ：選択ハイライトの X オフセット（選択範囲に依存、キャレット/変換中には非依存）。 ---
+    private bool _slSelHasCache;
+    private string? _slSelCacheText;
+    private int _slSelCacheSelectionStart;
+    private int _slSelCacheSelectionEnd;
+    private float _slSelCacheFontSize;
+    private float _slCacheSelStartX;
+    private float _slCacheSelEndX;
+
+    // --- PaintMultiline キャッシュ：合成テキスト・行分割・キャレット位置（選択範囲には非依存）。 ---
+    private bool _mlHasCache;
+    private string? _mlCacheText;
+    private int _mlCacheCaret;
+    private string? _mlCacheComposition;
+    private int _mlCacheCompositionCaret;
+    private float _mlCacheFontSize;
+    private string? _mlCachePlaceholder;
+    private int _mlCacheMaxLines;
+    private string[] _mlCacheLines = Array.Empty<string>();
+    private int _mlCacheCaretLine;
+    private int _mlCacheCaretLineStart;
+    private float _mlCacheLineH;
+    private int _mlCacheFirstVisible;
+    private float _mlCacheCaretXOnLine;
+    private float _mlCacheCompUx;
+    private float _mlCacheCompUw;
+
+    // --- PaintMultiline キャッシュ：選択ハイライトの行別 X オフセット（上記に加えて選択範囲に依存）。 ---
+    private bool _mlSelHasCache;
+    private string? _mlSelCacheText;
+    private int _mlSelCacheCaret;
+    private string? _mlSelCacheComposition;
+    private int _mlSelCacheCompositionCaret;
+    private float _mlSelCacheFontSize;
+    private string? _mlSelCachePlaceholder;
+    private int _mlSelCacheMaxLines;
+    private int _mlSelCacheSelectionStart;
+    private int _mlSelCacheSelectionEnd;
+    private readonly List<(int Line, float Sx, float Ex)> _mlSelOffsets = new();
+
     public TextFieldElement(TextField widget)
         : base(widget)
     {
@@ -561,32 +617,70 @@ internal sealed class TextFieldElement : Element
 
     private void PaintSingleLine(in PaintContext context, Rect inner, TextField widget, TextEditingController controller, HamonTheme theme)
     {
-        // 表示テキスト＝確定文字のキャレット位置に変換中(preedit)を挿入したもの。preedit は下線付き。
-        string before = controller.Text.Substring(0, controller.Caret);
-        string comp = controller.Composition;
-        string after = controller.Text.Substring(controller.Caret);
-        string composed = before + comp + after;
+        float fs = widget.FontSize;
+
+        // 表示テキスト＝確定文字のキャレット位置に変換中(preedit)を挿入したもの（preedit は下線付き）。
+        // 点滅ティッカーで入力が同一のまま毎フレーム呼ばれるため、前回と同一入力なら Substring 合成/Measure を再利用する。
+        if (!_slHasCache
+            || _slCacheText != controller.Text
+            || _slCacheCaret != controller.Caret
+            || _slCacheComposition != controller.Composition
+            || _slCacheCompositionCaret != controller.CompositionCaret
+            || _slCacheFontSize != fs)
+        {
+            string before = controller.Text.Substring(0, controller.Caret);
+            string comp = controller.Composition;
+            string after = controller.Text.Substring(controller.Caret);
+
+            _slCacheComposed = before + comp + after;
+            _slCacheBeforeW = before.Length > 0 ? Renderer.Measure(before, fs).X : 0f;
+            _slCacheCompW = comp.Length > 0 ? Renderer.Measure(comp, fs).X : 0f;
+            _slCacheCompCaretW = comp.Length > 0 ? Renderer.Measure(comp.Substring(0, controller.CompositionCaret), fs).X : 0f;
+            _slCacheCaretX = _slCacheBeforeW + _slCacheCompCaretW; // 変換中はその中のキャレット、なければ確定キャレット
+            _slCacheLineH = Renderer.Measure("Ag", fs).Y;
+
+            _slHasCache = true;
+            _slCacheText = controller.Text;
+            _slCacheCaret = controller.Caret;
+            _slCacheComposition = controller.Composition;
+            _slCacheCompositionCaret = controller.CompositionCaret;
+            _slCacheFontSize = fs;
+        }
+
+        string composed = _slCacheComposed;
+        float beforeW = _slCacheBeforeW;
+        float compW = _slCacheCompW;
+        float caretX = _slCacheCaretX;
+        float lineH = _slCacheLineH;
 
         bool empty = composed.Length == 0;
         string shown = empty ? widget.Placeholder : composed;
         Color color = empty ? (widget.PlaceholderColor ?? theme.OnSurfaceVariant) : (widget.TextColor ?? theme.OnSurface);
 
-        float fs = widget.FontSize;
-        float beforeW = before.Length > 0 ? Renderer.Measure(before, fs).X : 0f;
-        float compW = comp.Length > 0 ? Renderer.Measure(comp, fs).X : 0f;
-        float compCaretW = comp.Length > 0 ? Renderer.Measure(comp.Substring(0, controller.CompositionCaret), fs).X : 0f;
-        float caretX = beforeW + compCaretW; // 変換中はその中のキャレット、なければ確定キャレット
-        float lineH = Renderer.Measure("Ag", fs).Y;
         float scroll = Math.Max(0f, caretX - inner.Width); // キャレットを枠内に保つ横スクロール
         float textLeft = inner.X - scroll;
 
         // 選択ハイライト（変換中でないときのみ）。テキストの背面に塗る。
-        if (widget.Node.HasFocus && comp.Length == 0 && controller.HasSelection)
+        if (widget.Node.HasFocus && controller.Composition.Length == 0 && controller.HasSelection)
         {
-            float selStartX = controller.SelectionStart > 0 ? Renderer.Measure(controller.Text.Substring(0, controller.SelectionStart), fs).X : 0f;
-            float selEndX = controller.SelectionEnd > 0 ? Renderer.Measure(controller.Text.Substring(0, controller.SelectionEnd), fs).X : 0f;
+            if (!_slSelHasCache
+                || _slSelCacheText != controller.Text
+                || _slSelCacheSelectionStart != controller.SelectionStart
+                || _slSelCacheSelectionEnd != controller.SelectionEnd
+                || _slSelCacheFontSize != fs)
+            {
+                _slCacheSelStartX = controller.SelectionStart > 0 ? Renderer.Measure(controller.Text.Substring(0, controller.SelectionStart), fs).X : 0f;
+                _slCacheSelEndX = controller.SelectionEnd > 0 ? Renderer.Measure(controller.Text.Substring(0, controller.SelectionEnd), fs).X : 0f;
+
+                _slSelHasCache = true;
+                _slSelCacheText = controller.Text;
+                _slSelCacheSelectionStart = controller.SelectionStart;
+                _slSelCacheSelectionEnd = controller.SelectionEnd;
+                _slSelCacheFontSize = fs;
+            }
+
             Color selColor = widget.SelectionColor ?? new Color(theme.Primary.R, theme.Primary.G, theme.Primary.B, 90);
-            context.FillRect(new Rect(textLeft + selStartX, inner.Y, MathF.Max(0f, selEndX - selStartX), lineH), selColor);
+            context.FillRect(new Rect(textLeft + _slCacheSelStartX, inner.Y, MathF.Max(0f, _slCacheSelEndX - _slCacheSelStartX), lineH), selColor);
         }
 
         if (shown.Length > 0)
@@ -595,7 +689,7 @@ internal sealed class TextFieldElement : Element
             Renderer.Draw(shown, pos, fs * context.ScaleY, context.ApplyOpacity(color));
         }
 
-        if (comp.Length > 0) // 変換中テキストの下線
+        if (controller.Composition.Length > 0) // 変換中テキストの下線
         {
             context.FillRect(new Rect(textLeft + beforeW, inner.Y + lineH - 2f, compW, 2f), widget.CaretColor ?? theme.Primary);
         }
@@ -630,97 +724,174 @@ internal sealed class TextFieldElement : Element
     private void PaintMultiline(in PaintContext context, Rect inner, TextField widget, TextEditingController controller, HamonTheme theme)
     {
         float fs = widget.FontSize;
-        float lineH = Renderer.Measure("Ag", fs).Y;
+        int maxLines = Math.Max(1, widget.MaxLines);
 
-        // 確定テキストのキャレット位置に変換中(preedit)を挿入した表示用テキスト。
-        int caretGlobal = controller.Caret + (controller.Composition.Length > 0 ? controller.CompositionCaret : 0);
-        string composed = controller.Text.Insert(controller.Caret, controller.Composition);
-        bool empty = composed.Length == 0;
-
-        string[] lines = (empty ? widget.Placeholder : composed).Split('\n');
-        Color textColor = empty ? (widget.PlaceholderColor ?? theme.OnSurfaceVariant) : (widget.TextColor ?? theme.OnSurface);
-
-        // composed 上の各行先頭オフセット（キャレット行/列とのマッピング用）。
-        int caretLine = 0;
-        int caretLineStart = 0;
+        // 確定テキストのキャレット位置に変換中(preedit)を挿入した表示用テキスト・行分割・キャレット行/列。
+        // 点滅ティッカーで入力が同一のまま毎フレーム呼ばれるため、前回と同一入力なら Split/Measure を再利用する。
+        if (!_mlHasCache
+            || _mlCacheText != controller.Text
+            || _mlCacheCaret != controller.Caret
+            || _mlCacheComposition != controller.Composition
+            || _mlCacheCompositionCaret != controller.CompositionCaret
+            || _mlCacheFontSize != fs
+            || _mlCachePlaceholder != widget.Placeholder
+            || _mlCacheMaxLines != maxLines)
         {
-            int offset = 0;
-            for (int li = 0; li < lines.Length; li++)
-            {
-                int lineLen = lines[li].Length;
-                if (caretGlobal >= offset && caretGlobal <= offset + lineLen)
-                {
-                    caretLine = li;
-                    caretLineStart = offset;
-                }
+            float lineH = Renderer.Measure("Ag", fs).Y;
 
-                offset += lineLen + 1; // +1 は \n
+            int caretGlobal = controller.Caret + (controller.Composition.Length > 0 ? controller.CompositionCaret : 0);
+            string composed = controller.Text.Insert(controller.Caret, controller.Composition);
+            bool composedEmpty = composed.Length == 0;
+
+            string[] lines = (composedEmpty ? widget.Placeholder : composed).Split('\n');
+
+            // composed 上の各行先頭オフセット（キャレット行/列とのマッピング用）。
+            int caretLine = 0;
+            int caretLineStart = 0;
+            {
+                int offset = 0;
+                for (int li = 0; li < lines.Length; li++)
+                {
+                    int lineLen = lines[li].Length;
+                    if (caretGlobal >= offset && caretGlobal <= offset + lineLen)
+                    {
+                        caretLine = li;
+                        caretLineStart = offset;
+                    }
+
+                    offset += lineLen + 1; // +1 は \n
+                }
             }
+
+            int firstVisible = caretLine >= maxLines ? caretLine - maxLines + 1 : 0;
+            int caretColX = caretGlobal - caretLineStart;
+            float caretXOnLine = caretColX > 0 ? Renderer.Measure(lines[caretLine].Substring(0, Math.Min(caretColX, lines[caretLine].Length)), fs).X : 0f;
+
+            float compUx = 0f;
+            float compUw = 0f;
+            if (controller.Composition.Length > 0) // 変換中テキストの下線位置（キャレット行上）
+            {
+                int compStartCol = controller.Caret - caretLineStart;
+                compUx = compStartCol > 0 ? Renderer.Measure(lines[caretLine].Substring(0, Math.Min(compStartCol, lines[caretLine].Length)), fs).X : 0f;
+                compUw = Renderer.Measure(controller.Composition, fs).X;
+            }
+
+            _mlCacheLines = lines;
+            _mlCacheCaretLine = caretLine;
+            _mlCacheCaretLineStart = caretLineStart;
+            _mlCacheLineH = lineH;
+            _mlCacheFirstVisible = firstVisible;
+            _mlCacheCaretXOnLine = caretXOnLine;
+            _mlCacheCompUx = compUx;
+            _mlCacheCompUw = compUw;
+
+            _mlHasCache = true;
+            _mlCacheText = controller.Text;
+            _mlCacheCaret = controller.Caret;
+            _mlCacheComposition = controller.Composition;
+            _mlCacheCompositionCaret = controller.CompositionCaret;
+            _mlCacheFontSize = fs;
+            _mlCachePlaceholder = widget.Placeholder;
+            _mlCacheMaxLines = maxLines;
         }
 
-        int maxLines = Math.Max(1, widget.MaxLines);
-        int firstVisible = caretLine >= maxLines ? caretLine - maxLines + 1 : 0;
-        int caretColX = caretGlobal - caretLineStart;
-        float caretXOnLine = caretColX > 0 ? Renderer.Measure(lines[caretLine].Substring(0, Math.Min(caretColX, lines[caretLine].Length)), fs).X : 0f;
-        float hscroll = Math.Max(0f, caretXOnLine - inner.Width);
+        string[] outLines = _mlCacheLines;
+        int outCaretLine = _mlCacheCaretLine;
+        int outFirstVisible = _mlCacheFirstVisible;
+        float outLineH = _mlCacheLineH;
+        float outCaretXOnLine = _mlCacheCaretXOnLine;
+
+        bool empty = controller.Text.Length == 0 && controller.Composition.Length == 0;
+        Color textColor = empty ? (widget.PlaceholderColor ?? theme.OnSurfaceVariant) : (widget.TextColor ?? theme.OnSurface);
+
+        float hscroll = Math.Max(0f, outCaretXOnLine - inner.Width);
         float textLeft = inner.X - hscroll;
 
         // 選択ハイライト（変換中でないときのみ・行ごとに塗る）。
         if (widget.Node.HasFocus && controller.Composition.Length == 0 && controller.HasSelection)
         {
-            Color selColor = widget.SelectionColor ?? new Color(theme.Primary.R, theme.Primary.G, theme.Primary.B, 90);
-            int selStart = controller.SelectionStart;
-            int selEnd = controller.SelectionEnd;
-            int offset = 0;
-            for (int li = 0; li < lines.Length; li++)
+            if (!_mlSelHasCache
+                || _mlSelCacheText != controller.Text
+                || _mlSelCacheCaret != controller.Caret
+                || _mlSelCacheComposition != controller.Composition
+                || _mlSelCacheCompositionCaret != controller.CompositionCaret
+                || _mlSelCacheFontSize != fs
+                || _mlSelCachePlaceholder != widget.Placeholder
+                || _mlSelCacheMaxLines != maxLines
+                || _mlSelCacheSelectionStart != controller.SelectionStart
+                || _mlSelCacheSelectionEnd != controller.SelectionEnd)
             {
-                int lineLen = lines[li].Length;
-                int visualRow = li - firstVisible;
-                if (visualRow >= 0 && visualRow < maxLines)
+                _mlSelOffsets.Clear();
+                int selStart = controller.SelectionStart;
+                int selEnd = controller.SelectionEnd;
+                int offset = 0;
+                for (int li = 0; li < outLines.Length; li++)
                 {
-                    int s = Math.Max(selStart, offset) - offset;
-                    int e = Math.Min(selEnd, offset + lineLen) - offset;
-                    if (e > s && s <= lineLen)
+                    int lineLen = outLines[li].Length;
+                    int visualRow = li - outFirstVisible;
+                    if (visualRow >= 0 && visualRow < maxLines)
                     {
-                        float sx = s > 0 ? Renderer.Measure(lines[li].Substring(0, s), fs).X : 0f;
-                        float ex = e > 0 ? Renderer.Measure(lines[li].Substring(0, Math.Min(e, lineLen)), fs).X : 0f;
-                        float y = inner.Y + (visualRow * lineH);
-                        context.FillRect(new Rect(textLeft + sx, y, MathF.Max(0f, ex - sx), lineH), selColor);
+                        int s = Math.Max(selStart, offset) - offset;
+                        int e = Math.Min(selEnd, offset + lineLen) - offset;
+                        if (e > s && s <= lineLen)
+                        {
+                            float sx = s > 0 ? Renderer.Measure(outLines[li].Substring(0, s), fs).X : 0f;
+                            float ex = e > 0 ? Renderer.Measure(outLines[li].Substring(0, Math.Min(e, lineLen)), fs).X : 0f;
+                            _mlSelOffsets.Add((li, sx, ex));
+                        }
                     }
+
+                    offset += lineLen + 1;
                 }
 
-                offset += lineLen + 1;
+                _mlSelHasCache = true;
+                _mlSelCacheText = controller.Text;
+                _mlSelCacheCaret = controller.Caret;
+                _mlSelCacheComposition = controller.Composition;
+                _mlSelCacheCompositionCaret = controller.CompositionCaret;
+                _mlSelCacheFontSize = fs;
+                _mlSelCachePlaceholder = widget.Placeholder;
+                _mlSelCacheMaxLines = maxLines;
+                _mlSelCacheSelectionStart = controller.SelectionStart;
+                _mlSelCacheSelectionEnd = controller.SelectionEnd;
+            }
+
+            Color selColor = widget.SelectionColor ?? new Color(theme.Primary.R, theme.Primary.G, theme.Primary.B, 90);
+            for (int i = 0; i < _mlSelOffsets.Count; i++)
+            {
+                (int li, float sx, float ex) = _mlSelOffsets[i];
+                float y = inner.Y + ((li - outFirstVisible) * outLineH);
+                context.FillRect(new Rect(textLeft + sx, y, MathF.Max(0f, ex - sx), outLineH), selColor);
             }
         }
 
         // 各表示行を描画。
-        int lastRow = Math.Min(lines.Length, firstVisible + maxLines);
-        for (int li = firstVisible; li < lastRow; li++)
+        int lastRow = Math.Min(outLines.Length, outFirstVisible + maxLines);
+        for (int li = outFirstVisible; li < lastRow; li++)
         {
-            if (lines[li].Length == 0)
+            if (outLines[li].Length == 0)
             {
                 continue;
             }
 
-            float y = inner.Y + ((li - firstVisible) * lineH);
+            float y = inner.Y + ((li - outFirstVisible) * outLineH);
             Vec2 pos = context.ApplyTransform(new Vec2(textLeft, y));
-            Renderer.Draw(lines[li], pos, fs * context.ScaleY, context.ApplyOpacity(textColor));
+            Renderer.Draw(outLines[li], pos, fs * context.ScaleY, context.ApplyOpacity(textColor));
         }
 
         // 変換中テキストの下線（キャレット行上）。
         if (controller.Composition.Length > 0)
         {
-            int compStartCol = controller.Caret - caretLineStart;
-            float ux = compStartCol > 0 ? Renderer.Measure(lines[caretLine].Substring(0, Math.Min(compStartCol, lines[caretLine].Length)), fs).X : 0f;
-            float uw = Renderer.Measure(controller.Composition, fs).X;
-            float uy = inner.Y + ((caretLine - firstVisible) * lineH) + lineH - 2f;
+            float ux = _mlCacheCompUx;
+            float uw = _mlCacheCompUw;
+            float uy = inner.Y + ((outCaretLine - outFirstVisible) * outLineH) + outLineH - 2f;
             context.FillRect(new Rect(textLeft + ux, uy, uw, 2f), widget.CaretColor ?? theme.Primary);
         }
 
         if (widget.Node.HasFocus)
         {
-            float caretY = inner.Y + ((caretLine - firstVisible) * lineH);
-            float caretSig = (caretLine * 100000f) + caretXOnLine; // 行/列いずれの移動でも点滅を可視からやり直す
+            float caretY = inner.Y + ((outCaretLine - outFirstVisible) * outLineH);
+            float caretSig = (outCaretLine * 100000f) + outCaretXOnLine; // 行/列いずれの移動でも点滅を可視からやり直す
             if (_blink is not null && caretSig != _lastCaretX && !float.IsNaN(_lastCaretX))
             {
                 _blink.JumpTo(1f);
@@ -732,10 +903,10 @@ internal sealed class TextFieldElement : Element
             bool visible = (_blink?.Value ?? 1f) >= 0.5f;
             if (visible)
             {
-                context.FillRect(new Rect(textLeft + caretXOnLine, caretY, 2.5f, lineH), widget.CaretColor ?? theme.Primary);
+                context.FillRect(new Rect(textLeft + outCaretXOnLine, caretY, 2.5f, outLineH), widget.CaretColor ?? theme.Primary);
             }
 
-            Context.Owner?.SetTextInputCaret(new Rect(textLeft + caretXOnLine, caretY, 2.5f, lineH));
+            Context.Owner?.SetTextInputCaret(new Rect(textLeft + outCaretXOnLine, caretY, 2.5f, outLineH));
         }
         else
         {

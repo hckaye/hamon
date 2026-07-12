@@ -11,7 +11,7 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
     <VersionPrefix>0.1.0</VersionPrefix>
-    <VersionSuffix Condition="'$(VersionSuffix)' == ''">alpha.2</VersionSuffix>
+    <VersionSuffix Condition="'$(VersionSuffix)' == ''">alpha.3</VersionSuffix>
     <!-- Applications and tests are not packages unless a library opts in explicitly. -->
     <IsPackable>false</IsPackable>
   </PropertyGroup>

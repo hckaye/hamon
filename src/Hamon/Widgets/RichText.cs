@@ -52,6 +52,19 @@ internal sealed class RichTextElement : Element
     private bool _lineStart;
     private float _layoutMaxWidth;
 
+    // 直近の計測入力と結果（同一入力での再計測＝FlowSpan/Measure 呼び出しを避ける）。
+    // Spans は毎回新しいインスタンスで渡されることが多い（参照が変わる）ため、内容（Text/FontSize/Color）で比較する。
+    // Color は計測結果（Size）自体には影響しないが、_placed に焼き込まれ Paint で使われるため、キャッシュヒット時に
+    // 古い色のまま Paint されないようキャッシュキーに含める。
+    private bool _hasCache;
+    private int _cacheSpanCount;
+    private SpanSnapshot[] _cacheSpans = Array.Empty<SpanSnapshot>();
+    private float _cacheFontSize;
+    private Color? _cacheColor;
+    private bool _cacheWrap;
+    private float _cacheLayoutMaxWidth;
+    private Size _cacheSize;
+
     public RichTextElement(RichText widget)
         : base(widget)
     {
@@ -78,24 +91,85 @@ internal sealed class RichTextElement : Element
 
     private Size MeasureSelf(BoxConstraints constraints)
     {
+        RichText widget = W;
+        float layoutMaxWidth = widget.Wrap && float.IsFinite(constraints.MaxWidth) ? constraints.MaxWidth : float.PositiveInfinity;
+
+        // 同一入力なら前回のフロー結果/サイズを再利用（FlowSpan の Substring/Measure 呼び出しを省く）。
+        if (_hasCache
+            && _cacheFontSize == widget.FontSize
+            && Nullable.Equals(_cacheColor, widget.Color)
+            && _cacheWrap == widget.Wrap
+            && _cacheLayoutMaxWidth.Equals(layoutMaxWidth)
+            && SpansUnchanged(widget.Spans))
+        {
+            return _cacheSize;
+        }
+
         _placed.Clear();
         _x = 0f;
         _y = 0f;
         _lineHeight = 0f;
         _maxX = 0f;
         _lineStart = true;
-        _layoutMaxWidth = W.Wrap && float.IsFinite(constraints.MaxWidth) ? constraints.MaxWidth : float.PositiveInfinity;
+        _layoutMaxWidth = layoutMaxWidth;
 
-        Color fallback = W.Color ?? Context.Theme.OnSurface;
-        for (int i = 0; i < W.Spans.Count; i++)
+        Color fallback = widget.Color ?? Context.Theme.OnSurface;
+        for (int i = 0; i < widget.Spans.Count; i++)
         {
-            TextSpan span = W.Spans[i];
-            FlowSpan(span.Text, span.FontSize ?? W.FontSize, span.Color ?? fallback);
+            TextSpan span = widget.Spans[i];
+            FlowSpan(span.Text, span.FontSize ?? widget.FontSize, span.Color ?? fallback);
         }
 
         float width = float.IsFinite(_layoutMaxWidth) ? Math.Min(_maxX, _layoutMaxWidth) : _maxX;
         float height = _y + _lineHeight;
-        return new Size(width, height);
+        _cacheSize = new Size(width, height);
+
+        CacheSpans(widget.Spans);
+        _hasCache = true;
+        _cacheFontSize = widget.FontSize;
+        _cacheColor = widget.Color;
+        _cacheWrap = widget.Wrap;
+        _cacheLayoutMaxWidth = layoutMaxWidth;
+
+        return _cacheSize;
+    }
+
+    /// <summary>Whether <paramref name="spans"/> has the same content (Text/FontSize/Color per span) as the cached snapshot.</summary>
+    private bool SpansUnchanged(IReadOnlyList<TextSpan> spans)
+    {
+        if (spans.Count != _cacheSpanCount)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < spans.Count; i++)
+        {
+            TextSpan span = spans[i];
+            SpanSnapshot cached = _cacheSpans[i];
+            if (span.Text != cached.Text || !Nullable.Equals(span.FontSize, cached.FontSize) || !Nullable.Equals(span.Color, cached.Color))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Snapshots <paramref name="spans"/> content into <see cref="_cacheSpans"/> (reusing the buffer when the count is unchanged).</summary>
+    private void CacheSpans(IReadOnlyList<TextSpan> spans)
+    {
+        if (_cacheSpans.Length != spans.Count)
+        {
+            _cacheSpans = spans.Count == 0 ? Array.Empty<SpanSnapshot>() : new SpanSnapshot[spans.Count];
+        }
+
+        for (int i = 0; i < spans.Count; i++)
+        {
+            TextSpan span = spans[i];
+            _cacheSpans[i] = new SpanSnapshot(span.Text, span.FontSize, span.Color);
+        }
+
+        _cacheSpanCount = spans.Count;
     }
 
     private void FlowSpan(string text, float fontSize, Color color)
@@ -149,6 +223,23 @@ internal sealed class RichTextElement : Element
             _lineStart = false;
             i = k;
         }
+    }
+
+    /// <summary>A lightweight snapshot of a <see cref="TextSpan"/>'s content, used to detect whether <c>Spans</c> changed since the last measure.</summary>
+    private readonly struct SpanSnapshot
+    {
+        public SpanSnapshot(string text, float? fontSize, Color? color)
+        {
+            Text = text;
+            FontSize = fontSize;
+            Color = color;
+        }
+
+        public string Text { get; }
+
+        public float? FontSize { get; }
+
+        public Color? Color { get; }
     }
 
     private readonly struct Placed
